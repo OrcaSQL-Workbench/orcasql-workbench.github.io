@@ -6,7 +6,7 @@ import sys
 
 
 SITE = Path(__file__).resolve().parent.parent / "site"
-PAGES_PATH = "/orcasql-workbench-site/"
+PAGES_PATH = "/"
 
 
 class Page(HTMLParser):
@@ -89,7 +89,7 @@ def validate():
             route = unquote(url.path)
             if route.startswith("/"):
                 if not route.startswith(PAGES_PATH):
-                    failures.append(f"{name}: URL leaves the GitHub Pages project path: {reference}")
+                    failures.append(f"{name}: URL leaves the GitHub Pages site path: {reference}")
                     continue
                 target = SITE / route.removeprefix(PAGES_PATH)
             elif route:
@@ -127,4 +127,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
         raise SystemExit(1)
-    print("Validated site structure, project-path links, local assets and formal-policy release labels.")
+    print("Validated site structure, site-root links, local assets and formal-policy release labels.")
