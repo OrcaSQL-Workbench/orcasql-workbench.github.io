@@ -43,7 +43,7 @@ FORM: The approved documentation portal, without prototype controls or preview n
       <span class="brand-text">OrcaSQL <span>Workbench</span></span>
     </a>
     <nav aria-label="主要导航">
-      <a href="#docs">用户文档</a>
+      <a href="./docs/">用户文档</a>
       <a href="#feedback">问题反馈</a>
       <a href="./privacy/">隐私政策</a>
     </nav>
@@ -57,16 +57,16 @@ FORM: The approved documentation portal, without prototype controls or preview n
         <h1>OrcaSQL Workbench<br><span>文档与支持</span></h1>
         <p class="intro-copy">用户文档、操作说明与问题反馈的统一入口。<br>找到你需要的内容，也让每一次反馈有处可去。</p>
         <div class="portal-actions">
-          <a class="button button-primary" href="https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.io/wiki" target="_blank" rel="noopener noreferrer">
-            前往 GitHub Wiki<svg class="arrow" aria-hidden="true"><use href="#arrow-right"/></svg>
+          <a class="button button-primary" href="./docs/getting-started/">
+            阅读入门指南<svg class="arrow" aria-hidden="true"><use href="#arrow-right"/></svg>
           </a>
           <a class="button button-secondary" href="https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.io/issues" target="_blank" rel="noopener noreferrer">反馈使用问题</a>
         </div>
-        <p class="portal-preparing"><span class="status-dot" aria-hidden="true"></span>用户文档正在准备中，发布后可在 GitHub Wiki 阅读。</p>
+        <p class="portal-preparing"><span class="status-dot" aria-hidden="true"></span>用户文档适用于 0.1.0，当前连接选择器提供 MySQL。</p>
       </div>
       <aside class="portal-map" aria-label="入口导航">
         <div class="portal-map-heading"><h2>快捷入口</h2><span>公开文档与反馈</span></div>
-        <a class="portal-route" href="#docs">
+        <a class="portal-route" href="./docs/">
           <div><strong>阅读用户文档</strong><small>入门指南、操作说明与常见问题</small></div>
           <svg class="arrow" aria-hidden="true"><use href="#arrow-right"/></svg>
         </a>
@@ -82,23 +82,14 @@ FORM: The approved documentation portal, without prototype controls or preview n
     </div>
     <div class="portal-lower">
       <section id="docs" aria-labelledby="docs-heading">
-        <div class="section-heading"><h2 id="docs-heading">用户文档</h2><span class="status"><span class="status-dot" aria-hidden="true"></span>准备中</span></div>
+        <div class="section-heading"><h2 id="docs-heading">用户文档</h2><span class="status">0.1.0</span></div>
         <p class="section-description">按你的使用阶段，找到对应的阅读入口。</p>
         <div class="guide-list">
-          <details class="guide">
-            <summary><span class="guide-name">入门指南</span><span class="guide-right"><small>从这里开始</small><svg class="icon" aria-hidden="true"><use href="#chevron"/></svg></span></summary>
-            <p>入门指南正在准备中，发布后可在 GitHub Wiki 阅读。</p>
-          </details>
-          <details class="guide">
-            <summary><span class="guide-name">操作说明</span><span class="guide-right"><small>了解使用方法</small><svg class="icon" aria-hidden="true"><use href="#chevron"/></svg></span></summary>
-            <p>操作说明正在准备中，具体内容以 GitHub Wiki 发布的用户文档为准。</p>
-          </details>
-          <details class="guide">
-            <summary><span class="guide-name">常见问题</span><span class="guide-right"><small>寻找问题解答</small><svg class="icon" aria-hidden="true"><use href="#chevron"/></svg></span></summary>
-            <p>常见问题的解答尚未发布，后续内容将在 GitHub Wiki 提供。</p>
-          </details>
+          <a class="guide-link" href="./docs/getting-started/"><span class="guide-name">入门指南</span><span class="guide-right"><small>从这里开始</small><svg class="icon" aria-hidden="true"><use href="#chevron"/></svg></span></a>
+          <a class="guide-link" href="./docs/"><span class="guide-name">操作说明</span><span class="guide-right"><small>连接、SQL、结果与历史</small><svg class="icon" aria-hidden="true"><use href="#chevron"/></svg></span></a>
+          <a class="guide-link" href="./docs/faq/"><span class="guide-name">常见问题</span><span class="guide-right"><small>寻找问题解答</small><svg class="icon" aria-hidden="true"><use href="#chevron"/></svg></span></a>
         </div>
-        <div class="guide-tail"><span class="muted">完整文档将在 GitHub Wiki 维护</span><a class="text-link" href="https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.io/wiki" target="_blank" rel="noopener noreferrer">访问 Wiki<svg class="icon" aria-hidden="true"><use href="#external"/></svg></a></div>
+        <div class="guide-tail"><a class="text-link" href="./docs/">浏览全部文档</a><a class="text-link" href="https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.io/wiki" target="_blank" rel="noopener noreferrer">GitHub Wiki<svg class="icon" aria-hidden="true"><use href="#external"/></svg></a></div>
       </section>
       <section class="feedback-panel" id="feedback" aria-labelledby="feedback-heading">
         <h2 id="feedback-heading">问题与文档反馈</h2>

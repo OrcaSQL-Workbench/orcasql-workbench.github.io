@@ -1,0 +1,40 @@
+name: Sync documentation Wiki
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "scripts/build_docs.py"
+      - "scripts/sync_wiki.py"
+      - "requirements-docs.txt"
+      - ".github/workflows/wiki.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: documentation-wiki
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Publish the Markdown Wiki mirror
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WIKI_SYNC_TOKEN: ${{ secrets.WIKI_SYNC_TOKEN }}
+    steps:
+      - name: Check out the documentation source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install documentation dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-docs.txt
+      - name: Test the publishing tools
+        run: python -m unittest discover -s tests -v
+      - name: Publish only the managed Wiki files
+        working-directory: scripts
+        run: python sync_wiki.py
