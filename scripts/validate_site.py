@@ -1,0 +1,130 @@
+from collections import Counter
+from html.parser import HTMLParser
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
+import sys
+
+
+SITE = Path(__file__).resolve().parent.parent / "site"
+PAGES_PATH = "/orcasql-workbench-site/"
+
+
+class Page(HTMLParser):
+    def __init__(self, path):
+        super().__init__(convert_charrefs=True)
+        self.path = path
+        self.ids = Counter()
+        self.references = []
+        self.title = []
+        self.in_title = False
+        self.lang = None
+        self.viewport = False
+        self.doctype = False
+        self.h1_count = 0
+        self.main_count = 0
+        self.scripts = 0
+        self.feed(path.read_text(encoding="utf-8"))
+        self.close()
+
+    def handle_decl(self, decl):
+        self.doctype = decl.lower() == "doctype html"
+
+    def handle_starttag(self, tag, attributes):
+        attrs = dict(attributes)
+        if attrs.get("id"):
+            self.ids[attrs["id"]] += 1
+        if tag == "html":
+            self.lang = attrs.get("lang")
+        if tag == "meta" and attrs.get("name") == "viewport":
+            self.viewport = "width=device-width" in attrs.get("content", "")
+        if tag == "title":
+            self.in_title = True
+        if tag == "h1":
+            self.h1_count += 1
+        if tag == "main":
+            self.main_count += 1
+        if tag == "script":
+            self.scripts += 1
+        for attribute in ("href", "src"):
+            if attrs.get(attribute):
+                self.references.append(attrs[attribute])
+
+    def handle_endtag(self, tag):
+        if tag == "title":
+            self.in_title = False
+
+    def handle_data(self, data):
+        if self.in_title:
+            self.title.append(data)
+
+
+def validate():
+    failures = []
+    required = ("index.html", "privacy/index.html", "404.html", "assets/site.css", "assets/favicon.svg", ".nojekyll")
+    for name in required:
+        if not (SITE / name).is_file():
+            failures.append(f"Missing required site file: {name}")
+    if failures:
+        return failures
+
+    pages = {path.resolve(): Page(path) for path in SITE.rglob("*.html")}
+    for path, page in pages.items():
+        name = path.relative_to(SITE).as_posix()
+        if not page.doctype or page.lang != "zh-CN" or not page.viewport:
+            failures.append(f"{name}: missing HTML5, Chinese language or responsive viewport metadata")
+        if not "".join(page.title).strip() or page.h1_count != 1 or page.main_count != 1:
+            failures.append(f"{name}: expected a title, one h1 and one main element")
+        if page.scripts:
+            failures.append(f"{name}: this static website must not ship JavaScript")
+        for identifier, count in page.ids.items():
+            if count > 1:
+                failures.append(f"{name}: duplicate id {identifier}")
+        for reference in page.references:
+            url = urlsplit(reference)
+            if url.scheme in ("https", "mailto"):
+                continue
+            if url.scheme or url.netloc:
+                failures.append(f"{name}: unsupported URL scheme in {reference}")
+                continue
+            route = unquote(url.path)
+            if route.startswith("/"):
+                if not route.startswith(PAGES_PATH):
+                    failures.append(f"{name}: URL leaves the GitHub Pages project path: {reference}")
+                    continue
+                target = SITE / route.removeprefix(PAGES_PATH)
+            elif route:
+                target = path.parent / route
+            else:
+                target = path
+            target = target.resolve()
+            if not target.is_relative_to(SITE):
+                failures.append(f"{name}: local URL leaves the site directory: {reference}")
+                continue
+            if target.is_dir():
+                target = target / "index.html"
+            if not target.is_file():
+                failures.append(f"{name}: missing local target: {reference}")
+                continue
+            if url.fragment and target.suffix == ".html":
+                fragment = unquote(url.fragment)
+                if fragment not in pages[target].ids:
+                    failures.append(f"{name}: missing fragment target: {reference}")
+
+    homepage = (SITE / "index.html").read_text(encoding="utf-8")
+    for marker in ("data-design=", "data-choice=", "prototype-controls", "设计预览", "?variant="):
+        if marker in homepage:
+            failures.append(f"index.html: prototype-only content remains: {marker}")
+    policy = (SITE / "privacy" / "index.html").read_text(encoding="utf-8")
+    for marker in ("隐私政策草稿", "拟生效日期", "供开发者确认的本地草稿", "尚未公开发布"):
+        if marker in policy:
+            failures.append(f"privacy/index.html: an approved formal policy still has draft labels: {marker}")
+    return failures
+
+
+if __name__ == "__main__":
+    errors = validate()
+    if errors:
+        for error in errors:
+            print(f"ERROR: {error}", file=sys.stderr)
+        raise SystemExit(1)
+    print("Validated site structure, project-path links, local assets and formal-policy release labels.")
