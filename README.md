@@ -33,6 +33,7 @@
 - `site\index.html`：文档与支持首页。
 - `site\privacy\index.html`：隐私政策。
 - `site\assets\site.css`：首页与错误页样式。
+- `site\assets\privacy.css`：隐私政策页面样式。
 - `.github\workflows\pages.yml`：文档构建、静态验证与 GitHub Pages 自动发布。
 - `.github\workflows\wiki.yml`：主仓库文档到 GitHub Wiki 的单向同步。
 
