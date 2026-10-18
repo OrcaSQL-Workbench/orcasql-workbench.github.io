@@ -7,7 +7,7 @@
 - **[用户文档（网站）](https://orcasql-workbench.github.io/docs/)**：入门指南、连接与 TLS、SQL 编辑执行、结果导出、历史与文件、常见问题。
 - **[用户文档（GitHub Wiki）](https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.io/wiki)**：同一份文档的单向自动同步镜像，首次使用需完成下述初始化和授权。
 - **[公开网站（GitHub Pages）](https://orcasql-workbench.github.io/)**：文档导航与问题反馈入口。
-- **[隐私政策](https://orcasql-workbench.github.io/privacy/)**：适用于 OrcaSQL Workbench 0.1.0，生效日期为 2026年10月11日。
+- **[隐私政策](https://orcasql-workbench.github.io/privacy/)**：适用于 OrcaSQL Workbench，生效日期为 2026年10月11日。
 - **问题反馈（GitHub Issues）**：Workbench 使用问题与文档反馈。
 
 用户文档适用于 0.1.0；当前连接选择器提供 MySQL。相关声明和安装包下载入口尚未发布。
