@@ -1,6 +1,6 @@
 # 用户文档
 
-本指南介绍 OrcaSQL Workbench 0.1.0 的连接管理、SQL 编辑执行、结果查看与本地工作数据管理。应用面向 HarmonyOS NEXT，当前连接选择器提供 **MySQL**。
+本指南介绍 OrcaSQL Workbench 的连接管理、SQL 编辑执行、结果查看与本地工作数据管理。应用面向 HarmonyOS NEXT，当前连接选择器提供 **MySQL**。
 
 PostgreSQL、SQL Server、Oracle、SQLite、MongoDB 和 Redis 尚未作为可用引擎提供，不能将它们视为当前版本已支持的连接类型。
 
@@ -24,11 +24,11 @@ PostgreSQL、SQL Server、Oracle、SQLite、MongoDB 和 Redis 尚未作为可用
 
 数据处理和本地存储的说明见 [隐私政策](https://orcasql-workbench.github.io/privacy/)。
 
-## 安装与版本
+## 安装说明
 
 本网站目前没有提供安装包下载入口。安装包来源、设备兼容要求及分发渠道，以开发者正式发布的信息为准。
 
-操作说明以 0.1.0 的简体中文界面为准；如果你使用的版本或界面不同，反馈时请注明版本和具体操作步骤。
+如果实际界面与文档不同，反馈时请注明 Workbench 版本和具体操作步骤。
 
 ## 文档反馈
 
