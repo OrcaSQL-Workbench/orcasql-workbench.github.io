@@ -1,6 +1,6 @@
 # 连接管理与 TLS
 
-适用版本：OrcaSQL Workbench 0.1.0。当前连接选择器提供 MySQL。
+当前连接选择器提供 MySQL。
 
 ## 常规连接字段
 
