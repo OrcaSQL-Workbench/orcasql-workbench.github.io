@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "locale": "zh-Hans",
+  "effectiveDate": "2026-10-11",
+  "policyFile": "policy-zh-Hans.txt",
+  "sha256": "e4ce0a090c66c9959bca4359ad68a7a67067ab481669d5ac72acf96139a62224",
+  "headings": [
+    "OrcaSQL Workbench 隐私政策",
+    "我们处理哪些数据",
+    "数据保存在何处，何时发生传输",
+    "设备上的应用工作数据",
+    "用户指定的数据库服务器",
+    "设备权限与连接安全",
+    "第三方组件与用户指定的服务",
+    "保留期限与清理方式",
+    "您可以管理的工作数据",
+    "未成年人相关说明",
+    "如何联系我们",
+    "政策更新与说明范围"
+  ],
+  "policyUrl": "https://orcasql-workbench.github.io/privacy/versions/e4ce0a090c66c9959bca4359ad68a7a67067ab481669d5ac72acf96139a62224/"
+}

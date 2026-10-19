@@ -6,20 +6,26 @@ on:
     paths:
       - "site/**"
       - "docs/**"
+      - "privacy/**"
       - "tests/**"
       - "scripts/build_docs.py"
+      - "scripts/build_privacy.py"
       - "scripts/validate_site.py"
       - "requirements-docs.txt"
+      - ".gitattributes"
       - ".github/workflows/pages.yml"
   pull_request:
     branches: [main]
     paths:
       - "site/**"
       - "docs/**"
+      - "privacy/**"
       - "tests/**"
       - "scripts/build_docs.py"
+      - "scripts/build_privacy.py"
       - "scripts/validate_site.py"
       - "requirements-docs.txt"
+      - ".gitattributes"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -38,10 +44,21 @@ jobs:
     steps:
       - name: Check out the repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
       - name: Install documentation dependencies
         run: python -m pip install --disable-pip-version-check -r requirements-docs.txt
-      - name: Test documentation publishing
+      - name: Test documentation and policy publishing
         run: python -m unittest discover -s tests -v
+      - name: Check policy exports and complete first-parent archive history
+        env:
+          ARCHIVE_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD' }}
+        run: |
+          if [ -n "$ARCHIVE_BASE" ] && [ "$ARCHIVE_BASE" != "0000000000000000000000000000000000000000" ]; then
+            python scripts/build_privacy.py --check --archive-base "$ARCHIVE_BASE"
+          else
+            python scripts/build_privacy.py --check --archive-base HEAD
+          fi
       - name: Build documentation from Markdown
         working-directory: scripts
         run: python build_docs.py
