@@ -4,6 +4,8 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 import sys
 
+from build_privacy import build as build_policy
+
 
 SITE = Path(__file__).resolve().parent.parent / "site"
 PAGES_PATH = "/"
@@ -60,6 +62,10 @@ class Page(HTMLParser):
 
 def validate():
     failures = []
+    try:
+        build_policy(destination=SITE / "privacy", check=True, archive_base="HEAD")
+    except (ValueError, OSError) as error:
+        failures.append(f"Privacy policy generation: {error}")
     required = ("index.html", "privacy/index.html", "404.html", "assets/site.css", "assets/favicon.svg", ".nojekyll")
     for name in required:
         if not (SITE / name).is_file():
@@ -127,4 +133,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
         raise SystemExit(1)
-    print("Validated site structure, site-root links, local assets and formal-policy release labels.")
+    print("Validated policy exports and archives, site structure, site-root links, local assets and formal-policy release labels.")
