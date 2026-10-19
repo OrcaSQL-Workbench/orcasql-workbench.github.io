@@ -1,6 +1,6 @@
 # 入门指南
 
-适用版本：OrcaSQL Workbench 0.1.0。当前可用数据库引擎为 MySQL。
+当前可用数据库引擎为 MySQL。
 
 ## 开始前准备
 
