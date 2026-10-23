@@ -1,11 +1,13 @@
 # OrcaSQL Workbench 文档与支持
 
-这里维护 OrcaSQL Workbench 的用户文档和官方网站。Workbench 目前支持 **MySQL**。
+这里维护 OrcaSQL Workbench 的用户文档、ArkDB 开发者手册和官方网站。Workbench 目前支持 **MySQL**；独立的 ArkDB 驱动目前提供 **MySQL 工程预览**。
 
 ## 文档与链接
 
 - [用户文档](https://orcasql-workbench.github.io/docs/)：入门指南、连接与 TLS、SQL 编辑与执行、结果导出、历史记录和文件管理。
-- [GitHub Wiki](https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.io/wiki)：与网站使用同一份内容的文档镜像。
+- [Workbench Wiki](https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.io/wiki)：用户文档镜像。
+- [ArkDB 开发者手册](https://orcasql-workbench.github.io/arkdb/)：HAR 下载与接入、TLS、查询与流式结果、事务与取消、公共 API、构建与发行。
+- [ArkDB Wiki](https://github.com/OrcaSQL-Workbench/ArkDB/wiki)：开发者手册镜像，位于 ArkDB 仓库。
 - [官方网站](https://orcasql-workbench.github.io/)：文档导航和问题反馈入口。
 - [隐私政策](https://orcasql-workbench.github.io/privacy/)：数据处理和本地存储说明。
 
@@ -14,6 +16,8 @@
 使用中遇到问题，或者发现文档有错漏，请到 [GitHub Issues](https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.io/issues) 反馈。
 
 请附上 Workbench 版本、问题现象和操作步骤。文档问题请注明对应页面。不要提交密码、私钥、客户数据等敏感信息。
+
+ArkDB 驱动问题请到 [ArkDB Issues](https://github.com/OrcaSQL-Workbench/ArkDB/issues) 反馈，并附 HAR 版本、目标设备/API 和脱敏复现步骤。
 
 ## 维护说明
 

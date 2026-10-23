@@ -20,10 +20,14 @@ concurrency:
 
 jobs:
   sync:
-    name: Publish the Markdown Wiki mirror
+    name: Publish ${{ matrix.manual }} Wiki mirror
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        manual: [workbench, arkdb]
     env:
       WIKI_SYNC_TOKEN: ${{ secrets.WIKI_SYNC_TOKEN }}
     steps:
@@ -37,4 +41,4 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Publish only the managed Wiki files
         working-directory: scripts
-        run: python sync_wiki.py
+        run: python sync_wiki.py --manual ${{ matrix.manual }}

@@ -13,10 +13,46 @@ from markdown_it import MarkdownIt
 
 PROJECT = Path(__file__).resolve().parent.parent
 REPOSITORY_URL = "https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.io"
-WIKI_URL = REPOSITORY_URL + "/wiki"
 ASSET_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".svg"}
 SITE_MANIFEST = ".docs-generated-manifest.json"
 WIKI_MANIFEST = ".docs-sync-manifest.json"
+
+
+@dataclass(frozen=True)
+class Manual:
+    product: str
+    title: str
+    source_path: str
+    site_path: str
+    wiki_repository: str
+
+    @property
+    def source(self):
+        return PROJECT.joinpath(*self.source_path.split("/"))
+
+    @property
+    def site_output(self):
+        return PROJECT / "site" / self.site_path.strip("/")
+
+    @property
+    def repository_url(self):
+        return "https://github.com/" + self.wiki_repository
+
+    @property
+    def wiki_url(self):
+        return self.repository_url + "/wiki"
+
+
+MANUALS = {
+    "workbench": Manual(
+        "OrcaSQL Workbench", "用户文档", "docs", "/docs/",
+        "OrcaSQL-Workbench/orcasql-workbench.github.io",
+    ),
+    "arkdb": Manual(
+        "ArkDB", "ArkDB 开发者手册", "docs/arkdb", "/arkdb/",
+        "OrcaSQL-Workbench/ArkDB",
+    ),
+}
 
 
 def code_chunks(text):
@@ -51,10 +87,11 @@ class Document:
     slug: str
     title: str
     content: str
+    site_path: str = "/docs/"
 
     @property
     def site_url(self):
-        return "/docs/" + (self.slug + "/" if self.slug else "")
+        return self.site_path + (self.slug + "/" if self.slug else "")
 
     @property
     def wiki_name(self):
@@ -83,8 +120,9 @@ def safe_path(root, relative):
 
 
 class Documentation:
-    def __init__(self, source):
+    def __init__(self, source, manual=MANUALS["workbench"]):
         self.source = source.resolve()
+        self.manual = manual
         manifest = json.loads((self.source / "navigation.json").read_text(encoding="utf-8"))
         if not isinstance(manifest, dict) or manifest.get("version") != 1:
             raise ValueError("Unsupported documentation navigation manifest.")
@@ -108,7 +146,7 @@ class Documentation:
             if re.search(r'[\\/:*?"<>|\r\n]', title):
                 raise ValueError(f"Title cannot be used as a Wiki filename: {title}")
             content = safe_path(self.source, filename).read_text(encoding="utf-8")
-            page = Document(filename, slug, title, content)
+            page = Document(filename, slug, title, content, manual.site_path)
             if filename in sources or slug in slugs or page.wiki_name.casefold() in wiki_names:
                 raise ValueError(f"Duplicate documentation source, slug or Wiki title: {filename}")
             sources.add(filename)
@@ -142,7 +180,7 @@ class Documentation:
             asset = safe_path(self.source, path)
             if not asset.is_file() or asset.suffix.lower() not in ASSET_EXTENSIONS:
                 raise ValueError(f"{page.source}: missing or unsupported image asset: {path}")
-            route = ("/docs/" if surface == "site" else "") + quote(path, safe="/")
+            route = (self.manual.site_path if surface == "site" else "") + quote(path, safe="/")
         else:
             raise ValueError(f"{page.source}: unknown document or asset: {destination}")
         return urlunsplit(("", "", route, "", url.fragment))
@@ -283,6 +321,7 @@ def write_managed_files(root, files, manifest_name):
 
 
 def site_page(documentation, page):
+    manual = documentation.manual
     navigation = "\n".join(
         f'<a href="{escape(item.site_url, quote=True)}"'
         + (' aria-current="page"' if item == page else "")
@@ -290,15 +329,17 @@ def site_page(documentation, page):
         for item in documentation.pages
     )
     body = documentation.html(page)
-    source_url = REPOSITORY_URL + "/blob/main/docs/" + quote(page.source, safe="")
-    wiki_url = WIKI_URL + "/" + page.wiki_route
+    source_url = REPOSITORY_URL + "/blob/main/" + manual.source_path + "/" + quote(page.source, safe="")
+    wiki_url = manual.wiki_url + "/" + page.wiki_route
+    workbench_current = ' aria-current="page"' if manual == MANUALS["workbench"] else ""
+    arkdb_current = ' aria-current="page"' if manual == MANUALS["arkdb"] else ""
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="{escape(page.title, quote=True)} · OrcaSQL Workbench 用户文档">
-  <title>{escape(page.title)} · OrcaSQL Workbench</title>
+  <meta name="description" content="{escape(page.title, quote=True)} · {escape(manual.title, quote=True)}">
+  <title>{escape(page.title)} · {escape(manual.product)}</title>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
 </head>
@@ -306,13 +347,13 @@ def site_page(documentation, page):
   <a class="skip-link" href="#main">跳到文档正文</a>
   <header class="portal-header wrap">
     <a class="brand" href="/"><img class="brand-mark" src="/assets/favicon.svg" alt=""><span class="brand-text">OrcaSQL <span>Workbench</span></span></a>
-    <nav aria-label="主要导航"><a href="/">首页</a><a href="/docs/" aria-current="page">用户文档</a><a href="/privacy/">隐私政策</a></nav>
-    <a class="repo-link" href="{REPOSITORY_URL}" target="_blank" rel="noopener noreferrer">GitHub</a>
+    <nav aria-label="主要导航"><a href="/">首页</a><a href="/docs/"{workbench_current}>用户文档</a><a href="/arkdb/"{arkdb_current}>ArkDB 开发手册</a><a href="/privacy/">隐私政策</a></nav>
+    <a class="repo-link" href="{manual.repository_url}" target="_blank" rel="noopener noreferrer">GitHub</a>
   </header>
   <main class="docs-main wrap" id="main" tabindex="-1">
     <details class="docs-navigation" open>
-      <summary>文档目录</summary>
-      <nav aria-label="文档目录">{navigation}</nav>
+      <summary>{escape(manual.title)}</summary>
+      <nav aria-label="{escape(manual.title, quote=True)}目录">{navigation}</nav>
     </details>
     <article class="docs-article">
       {body}
@@ -324,8 +365,8 @@ def site_page(documentation, page):
 """
 
 
-def build_site(source=PROJECT / "docs", destination=PROJECT / "site" / "docs"):
-    documentation = Documentation(source)
+def build_site(source=PROJECT / "docs", destination=PROJECT / "site" / "docs", *, manual=MANUALS["workbench"]):
+    documentation = Documentation(source, manual)
     files = documentation.assets()
     for page in documentation.pages:
         relative = (page.slug + "/" if page.slug else "") + "index.html"
@@ -334,18 +375,19 @@ def build_site(source=PROJECT / "docs", destination=PROJECT / "site" / "docs"):
     return len(documentation.pages)
 
 
-def export_wiki(source, destination):
-    documentation = Documentation(source)
+def export_wiki(source, destination, *, manual=MANUALS["workbench"]):
+    documentation = Documentation(source, manual)
     files = documentation.assets()
     for page in documentation.pages:
         files[page.wiki_name + ".md"] = documentation.wiki_markdown(page).encode("utf-8")
-    sidebar = "# 用户文档\n\n" + "\n".join(
+    sidebar = f"# {manual.title}\n\n" + "\n".join(
         f"- [{page.title}]({page.wiki_route})" for page in documentation.pages
     ) + "\n"
     footer = (
-        "本文档由主仓库的 `docs` 目录自动同步。请在主仓库提交修改，"
+        f"本文档由文档仓库的 `{manual.source_path}` 目录自动同步。请在文档仓库提交修改，"
         "直接编辑 Wiki 可能被下次同步覆盖。\n\n"
-        f"[文档源码]({REPOSITORY_URL}/tree/main/docs) · [网站文档](https://orcasql-workbench.github.io/docs/)\n"
+        f"[文档源码]({REPOSITORY_URL}/tree/main/{manual.source_path}) · "
+        f"[网站文档](https://orcasql-workbench.github.io{manual.site_path})\n"
     )
     files["_Sidebar.md"] = sidebar.encode("utf-8")
     files["_Footer.md"] = footer.encode("utf-8")
@@ -354,14 +396,26 @@ def export_wiki(source, destination):
 
 def main():
     parser = argparse.ArgumentParser(description="Build website docs or export the same Markdown to GitHub Wiki.")
-    parser.add_argument("--source", type=Path, default=PROJECT / "docs")
-    parser.add_argument("--site-output", type=Path, default=PROJECT / "site" / "docs")
+    parser.add_argument("--manual", choices=("all", *MANUALS))
+    parser.add_argument("--source", type=Path)
+    parser.add_argument("--site-output", type=Path)
     parser.add_argument("--wiki-output", type=Path)
     arguments = parser.parse_args()
-    count = build_site(arguments.source, arguments.site_output)
-    if arguments.wiki_output:
-        export_wiki(arguments.source, arguments.wiki_output)
-    print(f"Built {count} pages from the single documentation source.")
+    if arguments.manual is None:
+        arguments.manual = "workbench" if arguments.source or arguments.site_output else "all"
+    if arguments.manual == "all" and (arguments.source or arguments.site_output):
+        parser.error("--source and --site-output require a single --manual.")
+    names = MANUALS if arguments.manual == "all" else (arguments.manual,)
+    for name in names:
+        manual = MANUALS[name]
+        source = arguments.source or manual.source
+        count = build_site(source, arguments.site_output or manual.site_output, manual=manual)
+        if arguments.wiki_output:
+            destination = arguments.wiki_output
+            if arguments.manual == "all":
+                destination = destination / name
+            export_wiki(source, destination, manual=manual)
+        print(f"Built {count} {name} pages from {manual.source_path}.")
 
 
 if __name__ == "__main__":

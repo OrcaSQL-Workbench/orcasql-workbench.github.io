@@ -3,10 +3,11 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-from build_docs import Documentation, SITE_MANIFEST, WIKI_MANIFEST, build_site, export_wiki, write_managed_files
+from build_docs import MANUALS, Documentation, SITE_MANIFEST, WIKI_MANIFEST, build_site, export_wiki, main, write_managed_files
 
 
 class DocumentationTests(unittest.TestCase):
@@ -145,6 +146,101 @@ class DocumentationTests(unittest.TestCase):
             write_managed_files(self.root / "wiki", {".git/config": b"bad"}, WIKI_MANIFEST)
         with self.assertRaisesRegex(ValueError, "Unsafe"):
             write_managed_files(self.root / "wiki", {".GIT/config": b"bad"}, WIKI_MANIFEST)
+
+    def test_manual_routes_sources_and_wiki_links_stay_separate(self):
+        for name, manual in MANUALS.items():
+            with self.subTest(manual=name):
+                destination = self.root / name
+                build_site(self.source, destination, manual=manual)
+                html = (destination / "index.html").read_text(encoding="utf-8")
+                self.assertIn(f'href="{manual.site_path}guide/"', html)
+                self.assertIn(f"/blob/main/{manual.source_path}/Home.md", html)
+                self.assertIn(f'href="{manual.wiki_url}/Home"', html)
+                self.assertIn(f'href="{manual.site_path}" aria-current="page"', html)
+                self.assertIn(f'<title>文档首页 · {manual.product}</title>', html)
+                other = MANUALS["arkdb" if name == "workbench" else "workbench"]
+                self.assertNotIn(f'href="{other.site_path}" aria-current="page"', html)
+
+    def test_arkdb_assets_use_arkdb_site_root(self):
+        (self.source / "assets").mkdir()
+        (self.source / "assets" / "screen.svg").write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg"/>', encoding="utf-8")
+        self.write("Home.md", "# 文档首页\n\n![截图](assets/screen.svg)\n")
+        manual = MANUALS["arkdb"]
+        documentation = Documentation(self.source, manual)
+        self.assertIn('src="/arkdb/assets/screen.svg"', documentation.html(documentation.pages[0]))
+        site, wiki = self.root / "site", self.root / "wiki"
+        build_site(self.source, site, manual=manual)
+        export_wiki(self.source, wiki, manual=manual)
+        self.assertEqual((site / "assets" / "screen.svg").read_bytes(),
+                         (wiki / "assets" / "screen.svg").read_bytes())
+
+    def test_wiki_footer_points_to_canonical_source_not_target_repository(self):
+        for name, manual in MANUALS.items():
+            with self.subTest(manual=name):
+                wiki = self.root / name
+                export_wiki(self.source, wiki, manual=manual)
+                footer = (wiki / "_Footer.md").read_text(encoding="utf-8")
+                sidebar = (wiki / "_Sidebar.md").read_text(encoding="utf-8")
+                self.assertIn(f"/tree/main/{manual.source_path}", footer)
+                self.assertIn(f"https://orcasql-workbench.github.io{manual.site_path}", footer)
+                self.assertIn("orcasql-workbench.github.io/tree/main/", footer)
+                self.assertTrue(sidebar.startswith(f"# {manual.title}\n"))
+                self.assertTrue((wiki / "Home.md").is_file())
+
+    def test_default_cli_builds_and_exports_both_manuals_separately(self):
+        wiki = self.root / "wiki"
+        with patch.object(sys, "argv", ["build_docs.py", "--wiki-output", str(wiki)]), \
+                patch("build_docs.build_site", return_value=2) as build, \
+                patch("build_docs.export_wiki") as export:
+            main()
+        self.assertEqual(build.call_count, 2)
+        self.assertEqual(export.call_count, 2)
+        for name, manual in MANUALS.items():
+            build.assert_any_call(manual.source, manual.site_output, manual=manual)
+            export.assert_any_call(manual.source, wiki / name, manual=manual)
+
+    def test_single_manual_cli_honors_custom_output_and_source(self):
+        manual = MANUALS["arkdb"]
+        site, wiki = self.root / "site", self.root / "wiki"
+        with patch.object(sys, "argv", [
+            "build_docs.py", "--manual", "arkdb", "--source", str(self.source),
+            "--site-output", str(site), "--wiki-output", str(wiki),
+        ]):
+            main()
+        self.assertTrue((site / "guide" / "index.html").is_file())
+        self.assertTrue((wiki / "Home.md").is_file())
+        self.assertIn(manual.wiki_url, (site / "index.html").read_text(encoding="utf-8"))
+
+    def test_legacy_custom_source_defaults_to_workbench(self):
+        site = self.root / "site"
+        with patch.object(sys, "argv", [
+            "build_docs.py", "--source", str(self.source), "--site-output", str(site),
+        ]):
+            main()
+        self.assertIn('href="/docs/guide/"', (site / "index.html").read_text(encoding="utf-8"))
+
+    def test_all_manuals_cannot_share_custom_output(self):
+        with patch.object(sys, "argv", [
+            "build_docs.py", "--manual", "all", "--site-output", str(self.root / "site"),
+        ]), patch("sys.stderr"):
+            with self.assertRaises(SystemExit) as error:
+                main()
+        self.assertEqual(error.exception.code, 2)
+
+    def test_repository_manuals_build_and_export_without_cross_cleanup(self):
+        site, wiki = self.root / "site", self.root / "wiki"
+        for name, manual in MANUALS.items():
+            with self.subTest(manual=name):
+                count = build_site(manual.source, site / name, manual=manual)
+                exported = export_wiki(manual.source, wiki / name, manual=manual)
+                pages = json.loads((manual.source / "navigation.json").read_text(encoding="utf-8"))["pages"]
+                self.assertEqual(count, len(pages))
+                self.assertEqual(sum(path.suffix == ".md" for path in (wiki / name).iterdir()), count + 2)
+                self.assertIn("Home.md", exported)
+        original = (wiki / "workbench" / "Home.md").read_bytes()
+        export_wiki(MANUALS["arkdb"].source, wiki / "arkdb", manual=MANUALS["arkdb"])
+        self.assertEqual((wiki / "workbench" / "Home.md").read_bytes(), original)
 
 
 if __name__ == "__main__":
