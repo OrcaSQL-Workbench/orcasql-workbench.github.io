@@ -106,6 +106,21 @@ python -m http.server 4178 --bind 127.0.0.1 --directory site
 
 工作流文件是 `.github\workflows\pages.yml`，只发布 `main` 分支的内容。
 
+## Actions 运行标题与任务名称
+
+运行标题区分来源、阶段和目标，发布触发方式不变：
+
+- PR 新建或更新：`PR #100 | Validate | Website + Docs`。内部检查名固定为 `Validate Website + Docs`，不随 PR 编号变化，便于设置 required check。
+- 合并后的网站发布：`Publish Website | Merge pull request #100 …`。内部任务分别显示 `PR #100 | Pre-publish Check` 和 `PR #100 | Publish Website`。
+- 合并后的 Wiki 同步：`Publish Wiki | Merge pull request #100 …`。两个矩阵任务分别显示 `PR #100 | Publish Workbench Wiki` 和 `PR #100 | Publish ArkDB Wiki`。
+- 手动运行以 `Manual` 标记来源，并显示阶段和分支；非 `main` 分支的网站运行只检查，Wiki 发布任务仍会跳过。
+
+`scripts\workflow_source.py` 为两条工作流解析来源。PR 事件直接使用事件编号；`push` 事件通过只读 GitHub API 查询提交关联的 PR，只有合并提交 SHA 和目标分支都匹配、且结果唯一时才使用 PR 编号。没有唯一匹配时显示 `Push <短提交 SHA>`，不根据提交说明猜测；API 请求或响应异常会明确失败，不冒充普通 push。来源解析任务只使用 `GITHUB_TOKEN` 的仓库内容和 PR 读取权限，不使用 Wiki 写入令牌。
+
+顶层 `run-name` 在 job 执行前确定，不能引用来源解析任务的输出，因此 push 运行标题保留原提交说明。标准合并提交说明会包含 PR 编号；直接 push 或自定义说明不保证包含编号，内部发布 job 仍按 API 结果标记。网站一次部署整个 `site`，包含 Workbench 和 ArkDB 两份手册，不拆成两个产品发布任务。
+
+如分支保护此前绑定了旧检查名 `Validate site`，需将其一次性更新为 `Validate Website + Docs`；之后该 PR 检查名保持固定。
+
 ## 配置 Wiki 同步
 
 GitHub Wiki 有独立的 `.wiki.git` 仓库，不会直接读取主仓库的 `docs`。`scripts\sync_wiki.py` 负责把文档同步过去，第一次使用前需要完成以下设置。

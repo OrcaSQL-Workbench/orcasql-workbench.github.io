@@ -1,4 +1,10 @@
 name: Sync documentation Wiki
+run-name: >-
+  ${{ github.event_name == 'push'
+      && format('Publish Wiki | {0}', github.event.head_commit.message || github.sha)
+      || github.ref == 'refs/heads/main'
+      && format('Manual | Publish Wiki | {0}', github.ref_name)
+      || format('Manual | Skip Wiki publishing | {0}', github.ref_name) }}
 
 on:
   push:
@@ -7,6 +13,7 @@ on:
       - "docs/**"
       - "scripts/build_docs.py"
       - "scripts/sync_wiki.py"
+      - "scripts/workflow_source.py"
       - "requirements-docs.txt"
       - ".github/workflows/wiki.yml"
   workflow_dispatch:
@@ -19,15 +26,41 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  sync:
-    name: Publish ${{ matrix.manual }} Wiki mirror
+  source:
+    name: Resolve run source | Wiki
     if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      label: ${{ steps.source.outputs.label }}
+    steps:
+      - name: Check out the documentation source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Associate the run with its PR or commit
+        id: source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/workflow_source.py
+
+  sync:
+    name: ${{ needs.source.outputs.label }} | Publish ${{ matrix.title }} Wiki
+    if: github.ref == 'refs/heads/main'
+    needs: source
     runs-on: ubuntu-latest
     timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
-        manual: [workbench, arkdb]
+        include:
+          - manual: workbench
+            title: Workbench
+          - manual: arkdb
+            title: ArkDB
     env:
       WIKI_SYNC_TOKEN: ${{ secrets.WIKI_SYNC_TOKEN }}
     steps:
