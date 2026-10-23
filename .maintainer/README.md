@@ -2,19 +2,28 @@
 
 ## 修改文档
 
-用户文档放在 `docs` 目录。网站和 Wiki 都从这里生成，修改内容时只改这一份。
+用户文档和开发者手册放在 `docs` 目录。网站和 Wiki 都从这里生成，修改内容时只改对应的 Markdown 和导航，不另行维护 Wiki 正文。
+
+| 手册 | 唯一内容源 | 网站入口 | Wiki 目标 |
+| --- | --- | --- | --- |
+| Workbench 用户文档 | `docs\*.md`、`docs\navigation.json` | `/docs/` | 本仓库的 Wiki |
+| ArkDB 开发者手册 | `docs\arkdb\*.md`、`docs\arkdb\navigation.json` | `/arkdb/` | `OrcaSQL-Workbench/ArkDB` 的 Wiki |
 
 - `docs\*.md`：文档正文。第一行标题要与导航中的标题一致。
 - `docs\navigation.json`：页面顺序、标题和网站路径，网站与 Wiki 共用。
 - `docs\assets`：文档图片，支持 PNG、JPEG、WebP 和 SVG。
 
+ArkDB 手册使用同样的文件和导航规则，图片放在 `docs\arkdb\assets`。链接只引用同一手册内的源文件名；跨手册使用完整的网站 HTTPS 地址。`scripts\build_docs.py` 中的 `MANUALS` 固定每份手册的源目录、网站路径和 Wiki 仓库，Wiki 同步不接受任意远端地址。
+
 文档之间的链接直接写源文件名，例如 `Connections.md`；图片路径写成 `assets/图片名`。发布时，脚本会转换为网站或 Wiki 对应的链接。代码块和行内代码中的内容不会转换。
 
-不要使用 Wiki 专属的 `[[页面]]` 链接语法，也不要直接修改生成的 `site\docs` 或 Wiki 页面，以免被下次同步覆盖。
+不要使用 Wiki 专属的 `[[页面]]` 链接语法，也不要直接修改生成的 `site\docs`、`site\arkdb` 或 Wiki 页面，以免被下次同步覆盖。
 
 用户指南不标注固定的适用版本，但要写清楚当前支持的功能。反馈问题时，仍需提供实际使用的 Workbench 版本。
 
-`site\docs` 和 `.build` 都是生成内容，不提交 Git。
+`site\docs`、`site\arkdb` 和 `.build` 都是生成内容，不提交 Git。
+
+ArkDB 的接口与支持边界应对照上游公共 `mysql\Index.ets`、包指南和实际 Release 更新。下载示例可固定到真实发布的版本，但不要把工程预览写成生产认证，或把尚未实现的驱动、参数绑定、连接池和托管 Worker 写成可用功能。
 
 ## 隐私政策的单一源与应用同步
 
@@ -71,6 +80,14 @@ python scripts\validate_site.py
 
 `build_docs.py` 负责生成网站文档和导出 Wiki 文件，`validate_site.py` 负责检查静态页面。
 
+默认构建两份手册；上面的 Wiki 导出分别写入 `.build\wiki\workbench` 和 `.build\wiki\arkdb`，各有独立的 `Home`、目录、页脚和管理清单。只构建或导出 ArkDB 时使用：
+
+```powershell
+python scripts\build_docs.py --manual arkdb --wiki-output .build\wiki\arkdb
+```
+
+`--manual workbench` 选择用户文档。`--source` 和 `--site-output` 可覆盖单份手册的输入输出，不能与 `--manual all` 混用。Wiki 导出不需要令牌，不会写远端。
+
 ## 本地预览
 
 构建完成后，在仓库根目录启动预览：
@@ -93,12 +110,12 @@ python -m http.server 4178 --bind 127.0.0.1 --directory site
 
 GitHub Wiki 有独立的 `.wiki.git` 仓库，不会直接读取主仓库的 `docs`。`scripts\sync_wiki.py` 负责把文档同步过去，第一次使用前需要完成以下设置。
 
-1. 打开本仓库的 **Wiki**，创建并保存 `Home` 首页。先写占位内容即可，首次同步时会替换为文档首页。
-2. 准备一个专用于 Wiki 同步、有到期时间的令牌。公共 Wiki 通常使用 classic PAT 的 `public_repo` 权限，不要为此授予可访问私有仓库的完整 `repo` 权限，也不要假定默认的 `GITHUB_TOKEN` 能写入 Wiki。
-3. 由令牌持有者在 **Settings → Secrets and variables → Actions** 中添加 `WIKI_SYNC_TOKEN`。令牌只放在 Secrets 中，不要写进代码、文档、命令参数或聊天。
+1. 分别打开[本仓库 Wiki](https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.io/wiki)和 [ArkDB Wiki](https://github.com/OrcaSQL-Workbench/ArkDB/wiki)，确认 Settings 中启用了 Wiki，并创建、保存各自的 `Home` 首页。先写占位内容即可，首次同步时会替换为对应手册首页。仅启用 Wiki 开关不会初始化 `.wiki.git`。
+2. 准备一个专用于 Wiki 同步、有到期时间的令牌，令牌所属账号必须能写入**两个目标仓库**的 Wiki。公共 Wiki 通常使用 classic PAT 的 `public_repo` 权限，不要为此授予可访问私有仓库的完整 `repo` 权限，也不要假定默认的 `GITHUB_TOKEN` 能跨仓库写入 Wiki。
+3. 由令牌持有者在**本文档仓库**的 **Settings → Secrets and variables → Actions** 中添加或更新 `WIKI_SYNC_TOKEN`。令牌只放在 Secrets 中，不要写进代码、文档、命令参数或聊天。
 4. 从 `main` 手动运行 **Sync documentation Wiki**。
 
-设置完成后，文档更改合并到 `main` 就会自动同步。工作流文件是 `.github\workflows\wiki.yml`。
+设置完成后，文档更改合并到 `main` 就会自动同步。工作流文件是 `.github\workflows\wiki.yml`；`workbench`、`arkdb` 两个矩阵任务分别导出、克隆并普通推送各自的 Wiki，一个失败不会取消另一个。工作流只能从本文档仓库的 `main` 运行，不会将 ArkDB 手册写进 Workbench Wiki。
 
 Wiki 只是文档镜像。直接在 Wiki 修改由脚本管理的页面，下次同步可能会覆盖这些修改。脚本会保留 Wiki 的 Git 历史，不会强制推送，也不会删除它未管理的页面。
 

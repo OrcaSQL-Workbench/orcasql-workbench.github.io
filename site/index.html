@@ -1,16 +1,16 @@
 <!doctype html>
 <!--
-THESIS: Give Workbench users a clear documentation and feedback entry point.
+THESIS: Give Workbench users and ArkDB developers distinct documentation entry points.
 OWN-WORLD: Preserve the approved A design: blue accents, light surfaces, system type and a route map.
-STORY: Find the Wiki, report a problem, or read the privacy policy; distinguish unpublished documentation.
-FIRST VIEWPORT: Product introduction and actions sit beside three destinations; guides and feedback follow.
+STORY: Read user guides or the developer manual, find their Wikis, report a problem, or read the privacy policy.
+FIRST VIEWPORT: Product introduction and actions sit beside four destinations; guides and feedback follow.
 FORM: The approved documentation portal, without prototype controls or preview notices.
 -->
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="OrcaSQL Workbench 公开用户文档与问题反馈入口，提供 GitHub Wiki 导航及隐私政策。">
+  <meta name="description" content="OrcaSQL Workbench 用户文档、ArkDB 开发者手册与问题反馈入口，提供 GitHub Wiki 导航及隐私政策。">
   <title>OrcaSQL Workbench · 文档与支持</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./assets/site.css">
@@ -44,6 +44,7 @@ FORM: The approved documentation portal, without prototype controls or preview n
     </a>
     <nav aria-label="主要导航">
       <a href="./docs/">用户文档</a>
+      <a href="./arkdb/">ArkDB 开发手册</a>
       <a href="#feedback">问题反馈</a>
       <a href="./privacy/">隐私政策</a>
     </nav>
@@ -55,7 +56,7 @@ FORM: The approved documentation portal, without prototype controls or preview n
     <div class="portal-intro">
       <div>
         <h1>OrcaSQL Workbench<br><span>文档与支持</span></h1>
-        <p class="intro-copy">用户文档、操作说明与问题反馈的统一入口。<br>找到你需要的内容，也让每一次反馈有处可去。</p>
+        <p class="intro-copy">Workbench 用户文档、ArkDB 开发手册与问题反馈的统一入口。<br>找到你需要的内容，也让每一次反馈有处可去。</p>
         <div class="portal-actions">
           <a class="button button-primary" href="./docs/getting-started/">
             阅读入门指南<svg class="arrow" aria-hidden="true"><use href="#arrow-right"/></svg>
@@ -70,6 +71,10 @@ FORM: The approved documentation portal, without prototype controls or preview n
           <div><strong>阅读用户文档</strong><small>入门指南、操作说明与常见问题</small></div>
           <svg class="arrow" aria-hidden="true"><use href="#arrow-right"/></svg>
         </a>
+        <a class="portal-route" href="./arkdb/">
+          <div><strong>集成 ArkDB 驱动</strong><small>面向 HarmonyOS 应用开发者的接入手册</small></div>
+          <svg class="arrow" aria-hidden="true"><use href="#arrow-right"/></svg>
+        </a>
         <a class="portal-route" href="#feedback">
           <div><strong>报告问题或文档反馈</strong><small>通过 GitHub Issues 告诉我们</small></div>
           <svg class="arrow" aria-hidden="true"><use href="#arrow-right"/></svg>
@@ -80,6 +85,21 @@ FORM: The approved documentation portal, without prototype controls or preview n
         </a>
       </aside>
     </div>
+    <section class="developer-section" id="arkdb" aria-labelledby="arkdb-heading">
+      <div>
+        <div class="section-heading"><h2 id="arkdb-heading">ArkDB 开发者手册</h2></div>
+        <p class="section-description">在自己的 HarmonyOS 应用中集成原生 ArkTS 数据库驱动，不依赖 Workbench。当前提供 MySQL 工程预览 HAR。</p>
+        <div class="developer-links">
+          <a class="text-link" href="./arkdb/">阅读完整手册<svg class="arrow" aria-hidden="true"><use href="#arrow-right"/></svg></a>
+          <a class="text-link" href="https://github.com/OrcaSQL-Workbench/ArkDB/wiki" target="_blank" rel="noopener noreferrer">ArkDB Wiki<svg class="icon" aria-hidden="true"><use href="#external"/></svg></a>
+        </div>
+      </div>
+      <div class="guide-list">
+        <a class="guide-link" href="./arkdb/getting-started/"><span class="guide-name">下载与快速接入</span><span class="guide-right"><small>校验 HAR，完成首次查询</small><svg class="icon" aria-hidden="true"><use href="#chevron"/></svg></span></a>
+        <a class="guide-link" href="./arkdb/queries/"><span class="guide-name">查询与流式结果</span><span class="guide-right"><small>类型、预算与截断</small><svg class="icon" aria-hidden="true"><use href="#chevron"/></svg></span></a>
+        <a class="guide-link" href="./arkdb/building-and-releasing/"><span class="guide-name">构建、示例与发行</span><span class="guide-right"><small>按驱动构建与分发</small><svg class="icon" aria-hidden="true"><use href="#chevron"/></svg></span></a>
+      </div>
+    </section>
     <div class="portal-lower">
       <section id="docs" aria-labelledby="docs-heading">
         <div class="section-heading"><h2 id="docs-heading">用户文档</h2></div>
@@ -103,7 +123,7 @@ FORM: The approved documentation portal, without prototype controls or preview n
       <p>保护敏感信息：请勿在反馈中包含账号凭据、客户数据或其他敏感信息。</p>
     </div>
     <footer class="portal-footer">
-      <span>OrcaSQL Workbench · 公开用户文档与反馈</span>
+      <span>OrcaSQL Workbench · 用户文档、开发手册与反馈</span>
       <span class="policy-note"><a href="./privacy/">隐私政策</a><span>相关声明待发布</span></span>
     </footer>
   </main>

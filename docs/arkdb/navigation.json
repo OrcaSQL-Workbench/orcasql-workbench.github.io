@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "pages": [
+    { "source": "Home.md", "slug": "", "title": "ArkDB 开发者手册" },
+    { "source": "Getting-Started.md", "slug": "getting-started", "title": "下载与快速接入" },
+    { "source": "Connections.md", "slug": "connections", "title": "连接配置与 TLS" },
+    { "source": "Queries.md", "slug": "queries", "title": "查询、结果与流式读取" },
+    { "source": "Transactions-and-Cancellation.md", "slug": "transactions-and-cancellation", "title": "事务、取消与超时" },
+    { "source": "API-Reference.md", "slug": "api-reference", "title": "公共接口与错误处理" },
+    { "source": "Building-and-Releasing.md", "slug": "building-and-releasing", "title": "构建、示例与发行" }
+  ]
+}

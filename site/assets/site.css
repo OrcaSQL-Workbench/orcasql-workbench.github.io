@@ -121,6 +121,9 @@ a:hover .arrow { transform: translateX(3px); }
 .guide[open] summary .icon { transform: rotate(90deg); }
 .guide p { max-width: 65ch; color: #586b7b; font-size: 14px; padding: 0 24px 20px 0; }
 .guide-tail { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 15px; font-size: 12px; }
+.developer-section { margin-top: 49px; padding-top: 32px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1.1fr; gap: 63px; align-items: start; }
+.developer-section .section-description { max-width: 38em; margin-bottom: 13px; }
+.developer-links { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 14px; }
 .feedback-panel { background: #eaf0fa; border-radius: 11px; padding: 27px 29px; }
 .feedback-panel h2 { font-size: 22px; }
 .feedback-panel > p { color: #526882; font-size: 14px; margin-top: 11px; }
@@ -173,7 +176,7 @@ a:hover .arrow { transform: translateX(3px); }
   .portal-header { min-height: 77px; gap: 14px; flex-wrap: wrap; padding-block: 15px; }
   .brand-text { font-size: 15px; }
   .brand-mark { width: 31px; height: 31px; }
-  .portal-header nav { width: 100%; order: 3; gap: 25px; padding-top: 2px; border-top: 1px solid #e1e7ef; font-size: 13px; }
+  .portal-header nav { width: 100%; order: 3; flex-wrap: wrap; gap: 2px 25px; padding-top: 2px; border-top: 1px solid #e1e7ef; font-size: 13px; }
   .portal-header .repo-link { font-size: 12px; }
   .portal-main { padding-top: 24px; }
   .portal-intro { grid-template-columns: 1fr; gap: 31px; }
@@ -184,6 +187,7 @@ a:hover .arrow { transform: translateX(3px); }
   .portal-map-heading { padding: 16px 19px; }
   .portal-route { padding: 15px 19px; }
   .portal-lower { grid-template-columns: 1fr; gap: 31px; margin-top: 37px; }
+  .developer-section { grid-template-columns: minmax(0, 1fr); gap: 20px; margin-top: 31px; padding-top: 27px; }
   .section-heading h2 { font-size: 22px; }
   .feedback-panel { padding: 23px; }
   .privacy-line { margin-top: 28px; }
@@ -205,7 +209,7 @@ a:hover .arrow { transform: translateX(3px); }
 @media (max-width: 360px) {
   .brand-text { font-size: 13px; }
   .portal-header .repo-link span { display: none; }
-  .portal-header nav { gap: 21px; }
+  .portal-header nav { gap: 2px 21px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
