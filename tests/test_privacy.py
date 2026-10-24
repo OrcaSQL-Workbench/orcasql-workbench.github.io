@@ -14,7 +14,7 @@ PROJECT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT / "scripts"))
 from build_privacy import (
     FILES, MANIFEST_FIELDS, Markup, POLICY_FILE, POLICY_URL, SOURCE,
-    build, check_manifest, load_json, policy_files,
+    build, check_manifest, load_json, policy_content, policy_files,
 )
 import validate_site
 
@@ -142,7 +142,8 @@ class PrivacyTests(unittest.TestCase):
         self.assertFalse(content.endswith(b"\n\n"))
         self.assertNotEqual(sha256(content.rstrip(b"\n")).hexdigest(), manifest["sha256"])
         for name in FILES:
-            self.assertEqual((self.output / name).read_bytes(), (self.output / "versions" / revision / name).read_bytes())
+            if name != "index.html":
+                self.assertEqual((self.output / name).read_bytes(), (self.output / "versions" / revision / name).read_bytes())
 
     def test_semantic_tables_links_csp_and_accessibility_are_retained(self):
         _, files = policy_files(self.source)
@@ -158,12 +159,36 @@ class PrivacyTests(unittest.TestCase):
         self.assertIn("mailto:policy@example.com", links)
         self.assertIn('href="/assets/privacy.css"', html)
         self.assertIn('href="/assets/favicon.svg"', html)
-        self.assertIn("default-src 'none'; img-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'", html)
+        self.assertIn("default-src 'none'; script-src 'self'; img-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'", html)
         self.assertIn('<section id="data" tabindex="-1" aria-labelledby="data-title">', html)
         self.assertIn('<h2 id="data-title">数据说明</h2>', html)
         self.assertIn('<main id="policy" tabindex="-1">', html)
         self.assertIn('<nav aria-label="隐私政策章节">', html)
-        self.assertNotIn("<script", html)
+        self.assertEqual([node.attrs for node in document.descendants("script")], [{"src": "/assets/theme.js"}])
+        self.assertIn("data-theme-control", html)
+        self.assertNotIn("unsafe-inline", html)
+        self.assertNotIn("unsafe-eval", html)
+
+    def test_theme_controls_do_not_change_policy_exports_or_enter_new_archives(self):
+        first = build(self.source, self.output)
+        current = (self.output / "index.html").read_text(encoding="utf-8")
+        archived = (self.output / "versions" / first / "index.html").read_text(encoding="utf-8")
+        self.assertNotEqual(current, archived)
+        self.assertEqual(policy_content(current), policy_content(archived))
+        self.assertIn("data-theme-control", current)
+        self.assertNotIn("data-theme-control", archived)
+        self.assertNotIn("<script", archived)
+        self.assertNotIn("script-src", archived)
+        original = self.snapshot(self.output / "versions" / first)
+        self.data["lead"] += "新增修订。"
+        self.write_source()
+        second = build(self.source, self.output)
+        self.assertNotEqual(second, first)
+        self.assertEqual(self.snapshot(self.output / "versions" / first), original)
+        archived = (self.output / "versions" / second / "index.html").read_text(encoding="utf-8")
+        self.assertNotIn("<script", archived)
+        self.assertNotIn("data-theme-control", archived)
+        self.assertEqual(policy_content((self.output / "index.html").read_text(encoding="utf-8")), policy_content(archived))
 
     def test_generation_is_deterministic_and_check_is_read_only(self):
         first = build(self.source, self.output)

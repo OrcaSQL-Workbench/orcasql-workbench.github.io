@@ -57,30 +57,39 @@ python scripts\build_privacy.py --check
 
 历史修订只新增，不修改或删除。工具检查归档的 TXT 哈希及 HTML、日期、标题和清单的一致性；同一 TXT 修订若对应不同的政策链接或清单，会明确报错而非覆盖。当前页面的非正文调整不会重写已有归档。归档清单从 `HEAD` 的**完整第一父提交历史**重建，将每个归档文件锁定为该历史中首次出现的原始 Git blob；未合并分支不纳入清单，已合并的归档会被纳入。CI 还将 PR 基线或推送前提交的完整第一父历史加入检查，不能因为删除或篡改已经进入 `HEAD`、或者随后有其他提交，就忘记旧修订。完整历史不可用（包括浅克隆）会明确失败；CI 保持 `fetch-depth: 0`，本地浅克隆需先补齐历史。历史修订曾被错误修改或删除时，恢复各文件最初的字节即可重新通过，不必改写失败提交的历史。
 
+当前政策页在正文之外提供主题选择器，CSP 只增加同源脚本许可，其余限制不变。归档使用无脚本、无主题控件的页面外壳；已有归档不改动，新修订也按这一规则归档。当前页与归档的 HTML 外壳可以不同，但 TXT、清单和政策正文必须对应同一修订。
+
 `--check` 完全只读，源与生成文件不一致或归档缺失会失败，不会自动修复或发布。`.gitattributes` 固定政策生成文件的 LF，避免 Windows 检出改变校验字节。
 
 应用同步自动化应从**同一个不可变网站 Git 提交**读取 TXT 和清单，并核对清单中的完整字节哈希。网站 Git 提交与 TXT 的 SHA-256 是两个不同的标识；本地尚未提交的预览不能冒用已有提交作为来源。生成文件进入网站提交后才能按该提交下载，归档网址在 Pages 发布后才可访问；本仓库的生成器不会修改应用仓库或发布网站。
 
 ## 修改网站
 
-网站使用 HTML、CSS 和本地静态资源，不使用浏览器端 JavaScript。
+网站使用 HTML、CSS 和本地静态资源。浏览器端只允许在 `head` 加载一份 `/assets/theme.js`，用于主题切换；静态校验会拒绝其他脚本、内联代码和事件处理属性。不要放宽 Markdown 或政策正文的输入限制来添加站点功能。
+
+首页、两份手册、当前隐私政策和 404 页提供“跟随系统／浅色／深色”选择。默认跟随系统；手动选择只保存到本站 `localStorage` 的 `orcasql-workbench.theme` 键，刷新、跨页及同源标签页会沿用。选择“跟随系统”会移除该键，不清空其他站点数据。存储不可用时会提示无法保存，当前页仍可切换；JS 不可用时隐藏控件，保留 CSS 自动主题。
+
+两份样式表共用 `theme.css` 的配色和控件样式。历史政策归档仍无脚本和控件，只跟随系统，不读取手动偏好。深色规则仅用于屏幕显示，打印仍使用浅色样式。
 
 - `site\index.html`：网站首页。
 - `privacy\policy-zh-Hans.json`：隐私政策唯一编辑源。
 - `site\privacy\index.html`：生成的当前隐私政策。
 - `site\assets\site.css`：首页和错误页样式。
 - `site\assets\privacy.css`：隐私政策页面样式。
+- `site\assets\theme.css`：共享主题配色与选择器样式。
+- `site\assets\theme.js`：主题偏好读取、切换和同源标签页同步，不访问远端服务。
 
 正式地址是 `https://orcasql-workbench.github.io/`。网站部署在组织根路径 `/`，不是仓库名下面。站内绝对链接从 `/` 开始，404 页的资源链接和返回首页链接也一样。
 
 ## 本地检查
 
-在仓库根目录运行：
+检查需要 Python 和 Node.js 22 或更高版本。Node.js 只用于主题回归测试，不需要安装 npm 包。在仓库根目录运行：
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-docs.txt
 python scripts\build_privacy.py --check
+node --test tests\theme.test.cjs
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 .\.venv\Scripts\python.exe scripts\build_docs.py --wiki-output .build\wiki
 python scripts\validate_site.py

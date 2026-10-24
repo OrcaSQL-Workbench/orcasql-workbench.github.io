@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
 THESIS: Give Workbench users and ArkDB developers distinct documentation entry points.
-OWN-WORLD: Preserve the approved A design: blue accents, light surfaces, system type and a route map.
+OWN-WORLD: Preserve the approved A design: blue accents, selectable light/dark surfaces, system type and a route map.
 STORY: Read user guides or the developer manual, find their Wikis, report a problem, or read the privacy policy.
 FIRST VIEWPORT: Product introduction and actions sit beside four destinations; guides and feedback follow.
 FORM: The approved documentation portal, without prototype controls or preview notices.
@@ -12,6 +12,7 @@ FORM: The approved documentation portal, without prototype controls or preview n
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="OrcaSQL Workbench 用户文档、ArkDB 开发者手册与问题反馈入口，提供 GitHub Wiki 导航及隐私政策。">
   <title>OrcaSQL Workbench · 文档与支持</title>
+  <script src="/assets/theme.js"></script>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./assets/site.css">
 </head>
@@ -47,6 +48,16 @@ FORM: The approved documentation portal, without prototype controls or preview n
       <a href="./arkdb/">ArkDB 开发手册</a>
       <a href="#feedback">问题反馈</a>
       <a href="./privacy/">隐私政策</a>
+      <div class="theme-settings" data-theme-settings hidden>
+        <label>主题
+          <select data-theme-control>
+            <option value="system">跟随系统</option>
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+          </select>
+        </label>
+        <span class="theme-status" data-theme-status role="status" hidden>当前页面已切换，但浏览器未能保存主题。</span>
+      </div>
     </nav>
     <a class="repo-link" href="https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.io" target="_blank" rel="noopener noreferrer">
       <span>GitHub</span><svg class="icon" aria-hidden="true"><use href="#external"/></svg>

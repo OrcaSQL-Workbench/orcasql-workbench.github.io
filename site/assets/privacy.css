@@ -1,14 +1,16 @@
+@import url("theme.css");
+
 :root {
-  color-scheme: light;
-  --ocean: #103a5c;
-  --accent: #0a7ea4;
-  --background: #eef2f6;
-  --paper: #ffffff;
-  --secondary: #f7f9fb;
-  --border: #d8dee6;
-  --text: #1f2d3d;
-  --muted: #546477;
-  --selection: #e6eef5;
+  color-scheme: var(--theme-scheme, light);
+  --ocean: var(--theme-heading, #103a5c);
+  --accent: var(--theme-policy-link, #0a7ea4);
+  --background: var(--theme-page, #eef2f6);
+  --paper: var(--theme-surface, #ffffff);
+  --secondary: var(--theme-hover, #f7f9fb);
+  --border: var(--theme-border, #d8dee6);
+  --text: var(--theme-text, #1f2d3d);
+  --muted: var(--theme-muted, #546477);
+  --selection: var(--theme-hover, #e6eef5);
 }
 
 * {
