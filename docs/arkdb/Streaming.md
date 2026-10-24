@@ -4,6 +4,8 @@
 
 ## 按块处理结果
 
+将下面的代码保存为 `src\main\ets\sample\StreamingExample.ets`。函数借用连接，不负责关闭。
+
 ```typescript
 import {
   ArkDbError, DbStreamingConnection, QueryExecutionSummary, QueryOptions,
@@ -35,6 +37,29 @@ export async function countBoundedRows(connection: DbStreamingConnection, truste
 ```
 
 每次执行使用新的 sink，或由应用明确重置状态。`trustedSql` 来自可信的应用逻辑，不是待拼接的用户输入。
+
+## 调用示例与结果判断
+
+先准备[连接页的 `ConnectionExample.ets`](Connections.md#定义连接信息并调用)，再在 `StreamingExample.ets` 中继续添加下面的代码。由 Worker 调用 `runStreamingExample(config, password)`，配置和密码来源与连接示例相同。
+
+[//]: # (arkdb-example: streaming-call)
+```typescript
+import { ConnectionConfig, DbConnection } from '@arkdb/mysql';
+import { withConnection } from './ConnectionExample';
+
+export async function runStreamingExample(config: ConnectionConfig, password: string): Promise<string> {
+  let text: string = '';
+  await withConnection(config, password, async (connection: DbConnection): Promise<void> => {
+    const sink = new CountingSink();
+    await countBoundedRows(connection, 'SELECT 1 AS id UNION ALL SELECT 2 AS id', sink);
+    if (sink.truncated) throw ArkDbError.validation('The streaming sample was truncated.');
+    text = 'Loaded rows: ' + sink.loadedRows.toString();
+  });
+  return text;
+}
+```
+
+固定查询的预期结果为 `Loaded rows: 2`，不是实机运行记录。此示例没有依赖 CRUD 临时表，也不需要写入权限。新 sink 避免上次计数累积；函数在状态未知、截断或关闭失败时抛错，不返回完整读取成功。
 
 ## 回调顺序
 

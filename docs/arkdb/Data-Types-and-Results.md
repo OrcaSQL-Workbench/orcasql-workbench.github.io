@@ -18,6 +18,42 @@ MySQL 的 `SqlValue` 是 `string | number | bigint | Uint8Array | null`。
 
 `JSON.stringify` 不能直接序列化 `bigint`。发送 Worker 消息或准备 JSON 时，要为精确值和二进制定好格式，不要先做一次隐含的有损转换。
 
+### 读取并格式化值的示例
+
+准备[连接公共模块](Connections.md#定义连接信息并调用)和[查询页的 `ResultFormatting.ets`](Queries.md#普通查询与类型)，将下面的独立模块保存为 `src\main\ets\sample\ValueExample.ets`。由 Worker 传入实际连接配置和本次密码调用，不需要写入数据库。
+
+[//]: # (arkdb-example: values-read)
+```typescript
+import { ArkDbError, ConnectionConfig, DbConnection } from '@arkdb/mysql';
+import { withConnection } from './ConnectionExample';
+import { displayRow } from './ResultFormatting';
+
+export async function readValueExamples(config: ConnectionConfig, password: string): Promise<string[]> {
+  const output: string[] = [];
+  await withConnection(config, password, async (connection: DbConnection): Promise<void> => {
+    const result = await connection.query(
+      'SELECT NULL AS sql_null, CAST(9007199254740993 AS UNSIGNED) AS exact_bigint, ' +
+      "CAST(12.34 AS DECIMAL(10,2)) AS exact_decimal, CAST('AB' AS BINARY) AS binary_value"
+    );
+    if (result.truncated || result.rows.length !== 1) {
+      throw ArkDbError.protocol('Expected one complete sample row.');
+    }
+    output.push(result.columns.map((column): string => column.name).join(' | '));
+    output.push(displayRow(result, 0).join(' | '));
+  });
+  return output;
+}
+```
+
+固定查询对应的预期文字如下，不是实机运行记录：
+
+```text
+sql_null | exact_bigint | exact_decimal | binary_value
+NULL | 9007199254740993 | 12.34 | 0x4142
+```
+
+第一项的原始值是 `null`，不是字符串；BIGINT 的原始值是 `bigint`，小数仍为字符串，二进制仍为 `Uint8Array`。`displayRow()` 只在展示边界进行转换。需要继续计算时，保留原始值和类型，不从展示文字反推数据。
+
 ## 列与服务器信息
 
 `columns[i]` 对应行数组的第 i 项。`ColumnDef` 包含列名、来源、`nativeTypeId`、`nativeTypeName`、`valueKind` 和可空标记。`DbValueKind` 表达逻辑类型，不替代实际值的检查。

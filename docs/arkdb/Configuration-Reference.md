@@ -18,6 +18,8 @@
 
 密码不在配置中，单独传给 `createConnection(config, password)` 或 `MySqlConnectionOptions`。
 
+主机、端口、默认数据库、账号和 CA 路径在哪里定义，以及密码如何从调用方传入，见[完整连接示例](Connections.md#定义连接信息并调用)。需要从 UI 收集设置时，看 [Worker 请求字段及映射](Worker-Integration.md#连接检查的请求与响应示例)，不要用未声明的全局变量代替示例输入。
+
 | 方法 | 返回 | 作用 |
 | --- | --- | --- |
 | `validate()` | `ArkDbError[]` | 检查配置，不打开连接 |

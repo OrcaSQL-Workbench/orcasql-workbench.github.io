@@ -88,3 +88,7 @@ export async function readVersion(host: string, user: string, password: string):
 接下来按 [Worker 集成](Worker-Integration.md)注册入口并连接 UI 消息。连接留在 Worker 内，UI 只接收适合展示的数据。
 
 如果想先运行一个现成项目，可以使用[完整示例](Worker-Integration.md#运行完整示例)。它的源码准备步骤与上面的 HAR 安装是两条不同路径，不需要为了在自己的应用里使用驱动而构建示例。
+
+需要明确填写主机、端口、数据库、账号和证书位置时，继续看[连接信息与调用示例](Connections.md#定义连接信息并调用)。上面的 `host`、`user` 和 `password` 是调用方传入的参数，不是驱动自动提供的值。
+
+验证连接后，按[查询页的 CRUD 示例](Queries.md#crud-示例的准备)分别练习建表、插入、查询、更新和删除。只读连接检查不需要建表权限；CRUD 使用临时表，需要测试数据库的相应权限。

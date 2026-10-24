@@ -34,6 +34,8 @@
 
 配置与校验在[配置参考](Configuration-Reference.md)，值和返回字段在[数据类型与结果](Data-Types-and-Results.md)。
 
+需要可调用的代码时，先看[定义连接信息并调用](Connections.md#定义连接信息并调用)，再看[分别执行 CRUD](Queries.md#crud-示例的准备)。流式、事务、取消、元数据和错误处理的示例保留在各自主题页，不在本页复制另一份实现。
+
 ## 可选能力
 
 可移植的 `CoreDbConnection` 只要求连接、查询、关闭、生命周期和服务器信息。扩展能力从 `features` 获取；没有对应接口就表示不支持，不能用一个成功的空操作代替。
