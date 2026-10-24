@@ -1,0 +1,89 @@
+[hidden] { display: none !important; }
+
+.theme-settings {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--theme-muted, #586b7b);
+  font-size: 13px;
+}
+.theme-settings label { display: inline-flex; align-items: center; gap: 8px; }
+.theme-settings select {
+  min-height: 44px;
+  max-width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--theme-control-border, #cdd8e3);
+  border-radius: 6px;
+  font: inherit;
+  color: var(--theme-text, #253c4e);
+  background: var(--theme-surface, #fff);
+}
+.theme-settings select:focus-visible {
+  outline: 3px solid var(--theme-focus, #b77900);
+  outline-offset: 3px;
+}
+.theme-status { flex-basis: 100%; max-width: 25em; font-size: 12px; }
+
+/* Shared overrides preserve each stylesheet's original light defaults. */
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --theme-scheme: dark;
+    --theme-page: #111b26;
+    --theme-text: #e0e8f0;
+    --theme-muted: #acbdd0;
+    --theme-link: #93b7ff;
+    --theme-policy-link: #91cde5;
+    --theme-border: #34465b;
+    --theme-surface: #192634;
+    --theme-hover: #22354a;
+    --theme-control-border: #465c75;
+    --theme-focus: #f1bc64;
+    --theme-primary: #285bc9;
+    --theme-primary-hover: #3269dd;
+    --theme-panel: #1d3048;
+    --theme-tag-border: #4a6386;
+    --theme-tag-text: #ceddf0;
+    --theme-heading: #d2e4f6;
+    --theme-code: #111e2d;
+    --theme-code-string: #a4d7b1;
+    --theme-code-number: #e6b17d;
+    --theme-code-type: #d2b0f3;
+    --theme-code-name: #9dc5fa;
+    --theme-code-variable: #e7accf;
+  }
+}
+
+@media screen {
+  :root[data-theme="dark"] {
+    --theme-scheme: dark;
+    --theme-page: #111b26;
+    --theme-text: #e0e8f0;
+    --theme-muted: #acbdd0;
+    --theme-link: #93b7ff;
+    --theme-policy-link: #91cde5;
+    --theme-border: #34465b;
+    --theme-surface: #192634;
+    --theme-hover: #22354a;
+    --theme-control-border: #465c75;
+    --theme-focus: #f1bc64;
+    --theme-primary: #285bc9;
+    --theme-primary-hover: #3269dd;
+    --theme-panel: #1d3048;
+    --theme-tag-border: #4a6386;
+    --theme-tag-text: #ceddf0;
+    --theme-heading: #d2e4f6;
+    --theme-code: #111e2d;
+    --theme-code-string: #a4d7b1;
+    --theme-code-number: #e6b17d;
+    --theme-code-type: #d2b0f3;
+    --theme-code-name: #9dc5fa;
+    --theme-code-variable: #e7accf;
+  }
+}
+
+@media print {
+  .theme-settings { display: none !important; }
+}

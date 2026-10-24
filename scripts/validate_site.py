@@ -4,7 +4,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 import sys
 
-from build_privacy import build as build_policy
+from build_privacy import VOID_ELEMENTS, build as build_policy
 
 
 SITE = Path(__file__).resolve().parent.parent / "site"
@@ -24,7 +24,15 @@ class Page(HTMLParser):
         self.doctype = False
         self.h1_count = 0
         self.main_count = 0
-        self.scripts = 0
+        self.scripts = []
+        self.active_script = None
+        self.parents = []
+        self.base_elements = 0
+        self.event_handlers = []
+        self.theme_controls = 0
+        self.theme_settings = []
+        self.theme_options = []
+        self.in_theme_control = False
         self.feed(path.read_text(encoding="utf-8"))
         self.close()
 
@@ -33,6 +41,8 @@ class Page(HTMLParser):
 
     def handle_starttag(self, tag, attributes):
         attrs = dict(attributes)
+        if tag == "base":
+            self.base_elements += 1
         if attrs.get("id"):
             self.ids[attrs["id"]] += 1
         if tag == "html":
@@ -46,18 +56,70 @@ class Page(HTMLParser):
         if tag == "main":
             self.main_count += 1
         if tag == "script":
-            self.scripts += 1
+            self.active_script = {
+                "attributes": attributes, "content": "",
+                "head": self.parents == ["html", "head"], "self_closing": False,
+            }
+            self.scripts.append(self.active_script)
+        self.event_handlers.extend(name for name in attrs if name.startswith("on"))
+        if "data-theme-settings" in attrs:
+            self.theme_settings.append("hidden" in attrs)
+        if tag == "select" and "data-theme-control" in attrs:
+            self.theme_controls += 1
+            self.in_theme_control = True
+        if tag == "option" and self.in_theme_control:
+            self.theme_options.append(attrs.get("value"))
         for attribute in ("href", "src"):
             if attrs.get(attribute):
                 self.references.append(attrs[attribute])
+        if tag not in VOID_ELEMENTS:
+            self.parents.append(tag)
 
     def handle_endtag(self, tag):
         if tag == "title":
             self.in_title = False
+        if tag == "script":
+            self.active_script = None
+        if tag == "select":
+            self.in_theme_control = False
+        for index in range(len(self.parents) - 1, -1, -1):
+            if self.parents[index] == tag:
+                del self.parents[index:]
+                break
+
+    def handle_startendtag(self, tag, attributes):
+        self.handle_starttag(tag, attributes)
+        if tag == "script":
+            self.active_script["self_closing"] = True
+        self.handle_endtag(tag)
 
     def handle_data(self, data):
         if self.in_title:
             self.title.append(data)
+        if self.active_script is not None:
+            self.active_script["content"] += data
+
+
+def script_errors(page, *, archived=False):
+    failures = []
+    if page.event_handlers:
+        failures.append("inline event handlers are not allowed")
+    if page.base_elements:
+        failures.append("base elements must not change the local theme script's origin")
+    if archived:
+        if page.scripts or page.theme_controls or page.theme_settings:
+            failures.append("historical policy pages must remain script-free without theme controls")
+        return failures
+    if len(page.scripts) != 1:
+        failures.append("expected exactly one approved local theme script")
+    for script in page.scripts:
+        if (script["attributes"] != [("src", "/assets/theme.js")] or script["content"].strip()
+                or not script["head"] or script["self_closing"]):
+            failures.append("only an empty head script with src=\"/assets/theme.js\" is allowed")
+    if (page.theme_controls != 1 or page.theme_settings != [True]
+            or page.theme_options != ["system", "light", "dark"]):
+        failures.append("expected one initially hidden system/light/dark theme selector")
+    return failures
 
 
 def validate():
@@ -66,7 +128,10 @@ def validate():
         build_policy(destination=SITE / "privacy", check=True, archive_base="HEAD")
     except (ValueError, OSError) as error:
         failures.append(f"Privacy policy generation: {error}")
-    required = ("index.html", "privacy/index.html", "404.html", "assets/site.css", "assets/favicon.svg", ".nojekyll")
+    required = (
+        "index.html", "privacy/index.html", "404.html", "assets/site.css",
+        "assets/privacy.css", "assets/theme.css", "assets/theme.js", "assets/favicon.svg", ".nojekyll",
+    )
     for name in required:
         if not (SITE / name).is_file():
             failures.append(f"Missing required site file: {name}")
@@ -80,8 +145,10 @@ def validate():
             failures.append(f"{name}: missing HTML5, Chinese language or responsive viewport metadata")
         if not "".join(page.title).strip() or page.h1_count != 1 or page.main_count != 1:
             failures.append(f"{name}: expected a title, one h1 and one main element")
-        if page.scripts:
-            failures.append(f"{name}: this static website must not ship JavaScript")
+        failures.extend(
+            f"{name}: {error}"
+            for error in script_errors(page, archived=path.is_relative_to(SITE / "privacy" / "versions"))
+        )
         for identifier, count in page.ids.items():
             if count > 1:
                 failures.append(f"{name}: duplicate id {identifier}")
@@ -133,4 +200,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
         raise SystemExit(1)
-    print("Validated policy exports and archives, site structure, site-root links, local assets and formal-policy release labels.")
+    print("Validated policy exports and archives, approved theme scripts, site structure, site-root links, local assets and formal-policy release labels.")

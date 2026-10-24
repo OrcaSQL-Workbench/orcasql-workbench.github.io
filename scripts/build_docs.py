@@ -398,6 +398,7 @@ def site_page(documentation, page):
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="{escape(page.title, quote=True)} · {escape(manual.title, quote=True)}">
   <title>{escape(page.title)} · {escape(manual.product)}</title>
+  <script src="/assets/theme.js"></script>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
 </head>
@@ -405,7 +406,19 @@ def site_page(documentation, page):
   <a class="skip-link" href="#main">跳到文档正文</a>
   <header class="portal-header wrap">
     <a class="brand" href="/"><img class="brand-mark" src="/assets/favicon.svg" alt=""><span class="brand-text">OrcaSQL <span>Workbench</span></span></a>
-    <nav aria-label="主要导航"><a href="/">首页</a><a href="/docs/"{workbench_current}>用户文档</a><a href="/arkdb/"{arkdb_current}>ArkDB 开发手册</a><a href="/privacy/">隐私政策</a></nav>
+    <nav aria-label="主要导航">
+      <a href="/">首页</a><a href="/docs/"{workbench_current}>用户文档</a><a href="/arkdb/"{arkdb_current}>ArkDB 开发手册</a><a href="/privacy/">隐私政策</a>
+      <div class="theme-settings" data-theme-settings hidden>
+        <label>主题
+          <select data-theme-control>
+            <option value="system">跟随系统</option>
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+          </select>
+        </label>
+        <span class="theme-status" data-theme-status role="status" hidden>当前页面已切换，但浏览器未能保存主题。</span>
+      </div>
+    </nav>
     <a class="repo-link" href="{manual.repository_url}" target="_blank" rel="noopener noreferrer">GitHub</a>
   </header>
   <main class="{main_class} wrap" id="main" tabindex="-1">

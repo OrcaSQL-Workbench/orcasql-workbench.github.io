@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 from build_docs import MANUALS, Documentation, SITE_MANIFEST, WIKI_MANIFEST, build_site, export_wiki, main, write_managed_files
+from validate_site import Page, script_errors
 
 
 class NavigationParser(HTMLParser):
@@ -248,7 +249,7 @@ class DocumentationTests(unittest.TestCase):
                             self.assertEqual(set(attrs), {"class"})
                             self.assertTrue(attrs["class"].startswith("tok-"))
                             self.assertNotEqual(attrs["class"], "tok-err")
-                self.assertNotIn("<script", html)
+                self.assertEqual(script_errors(Page(destination / "index.html")), [])
                 self.assertNotIn("style=", html)
 
     def test_highlighting_preserves_whitespace_and_html_as_code_text(self):
