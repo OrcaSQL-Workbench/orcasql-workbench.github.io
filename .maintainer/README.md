@@ -15,6 +15,10 @@
 
 ArkDB 手册使用同样的文件和导航规则，图片放在 `docs\arkdb\assets`。链接只引用同一手册内的源文件名；跨手册使用完整的网站 HTTPS 地址。`scripts\build_docs.py` 中的 `MANUALS` 固定每份手册的源目录、网站路径和 Wiki 仓库，Wiki 同步不接受任意远端地址。
 
+ArkDB 导航使用 `version: 2`。每页在 `source`、`slug`、`title` 之外填写 `section`，网站目录和 Wiki 侧栏会按分组显示。同组页面按清单中的先后顺序排列。`nav: false` 只隐藏目录项，页面仍会生成，供旧链接使用；首页不能隐藏。Workbench 继续使用原有的 `version: 1` 平铺目录。
+
+移动章节时保留旧页面的标题、路径和原有章节标题，在原位置放上简短说明和新页面链接。Wiki 文件名来自页面标题，改标题也会改变 Wiki 链接。页面内的目录直接写 Markdown 锚点链接，网站检查会核对目标是否存在。
+
 文档之间的链接直接写源文件名，例如 `Connections.md`；图片路径写成 `assets/图片名`。发布时，脚本会转换为网站或 Wiki 对应的链接。代码块和行内代码中的内容不会转换。
 
 不要使用 Wiki 专属的 `[[页面]]` 链接语法，也不要直接修改生成的 `site\docs`、`site\arkdb` 或 Wiki 页面，以免被下次同步覆盖。
@@ -24,6 +28,8 @@ ArkDB 手册使用同样的文件和导航规则，图片放在 `docs\arkdb\asse
 `site\docs`、`site\arkdb` 和 `.build` 都是生成内容，不提交 Git。
 
 ArkDB 的接口与支持边界应对照上游公共 `mysql\Index.ets`、包指南和实际 Release 更新。下载示例可固定到真实发布的版本，但不要把工程预览写成生产认证，或把尚未实现的驱动、参数绑定、连接池和托管 Worker 写成可用功能。
+
+当前手册以 MySQL 1.0.2 为准。`tests\fixtures\arkdb-mysql-1.0.2-examples.json` 保存从实际发布 HAR 提取的八个包指南示例，以及 HAR、包指南摘要和源码提交。`test_arkdb_manual.py` 比对手册中的 ArkTS 示例，并检查旧页面、章节链接和站内导航。更新示例时先核对对应发行包，不把仅存在于开发分支的接口写进已发布版本的用法。
 
 ## 隐私政策的单一源与应用同步
 

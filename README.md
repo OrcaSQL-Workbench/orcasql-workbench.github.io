@@ -6,7 +6,7 @@
 
 - [用户文档](https://orcasql-workbench.github.io/docs/)：入门指南、连接与 TLS、SQL 编辑与执行、结果导出、历史记录和文件管理。
 - [Workbench Wiki](https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.io/wiki)：用户文档镜像。
-- [ArkDB 开发者手册](https://orcasql-workbench.github.io/arkdb/)：HAR 下载与接入、TLS、查询与流式结果、事务与取消、公共 API、构建与发行。
+- [ArkDB 开发者手册](https://orcasql-workbench.github.io/arkdb/)：开始使用、MySQL 使用指南、接口参考、故障排查与维护说明。
 - [ArkDB Wiki](https://github.com/OrcaSQL-Workbench/ArkDB/wiki)：开发者手册镜像，位于 ArkDB 仓库。
 - [官方网站](https://orcasql-workbench.github.io/)：文档导航和问题反馈入口。
 - [隐私政策](https://orcasql-workbench.github.io/privacy/)：数据处理和本地存储说明。

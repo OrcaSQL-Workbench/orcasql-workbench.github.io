@@ -1,0 +1,85 @@
+[
+  {
+    "source": "Home.md",
+    "slug": "",
+    "title": "ArkDB 开发者手册",
+    "anchors": [
+      "arkdb-开发者手册",
+      "当前提供什么",
+      "按任务阅读",
+      "接入前的边界",
+      "源码示例与反馈"
+    ]
+  },
+  {
+    "source": "Getting-Started.md",
+    "slug": "getting-started",
+    "title": "下载与快速接入",
+    "anchors": [
+      "下载与快速接入",
+      "下载同一版本的资产",
+      "加入应用模块",
+      "首次连接查询和关闭",
+      "接入-worker"
+    ]
+  },
+  {
+    "source": "Connections.md",
+    "slug": "connections",
+    "title": "连接配置与 TLS",
+    "anchors": [
+      "连接配置与-tls",
+      "连接字段",
+      "明确选择-tls-模式",
+      "自定义-ca-与客户端证书",
+      "会话生命周期"
+    ]
+  },
+  {
+    "source": "Queries.md",
+    "slug": "queries",
+    "title": "查询、结果与流式读取",
+    "anchors": [
+      "查询结果与流式读取",
+      "普通查询与类型",
+      "有界流式读取",
+      "queryoptions-默认值"
+    ]
+  },
+  {
+    "source": "Transactions-and-Cancellation.md",
+    "slug": "transactions-and-cancellation",
+    "title": "事务、取消与超时",
+    "anchors": [
+      "事务取消与超时",
+      "事务",
+      "取消使用独立控制连接",
+      "连接截止时间不等于语句超时",
+      "何时不能安全复用"
+    ]
+  },
+  {
+    "source": "API-Reference.md",
+    "slug": "api-reference",
+    "title": "公共接口与错误处理",
+    "anchors": [
+      "公共接口与错误处理",
+      "工厂与连接",
+      "元数据与服务器指标",
+      "类型化错误",
+      "日志"
+    ]
+  },
+  {
+    "source": "Building-and-Releasing.md",
+    "slug": "building-and-releasing",
+    "title": "构建、示例与发行",
+    "anchors": [
+      "构建示例与发行",
+      "本机工具链",
+      "运行-worker-示例",
+      "区分验证层次",
+      "本机构建github-release-分发"
+    ]
+  }
+]

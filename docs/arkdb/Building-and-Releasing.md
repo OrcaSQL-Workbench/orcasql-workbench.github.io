@@ -1,70 +1,37 @@
 # 构建、示例与发行
 
-消费应用可直接[安装已下载的 HAR](Getting-Started.md)。本页面向需要构建驱动、运行完整示例或维护发行的开发者；这些维护工具不是驱动的运行时依赖。
+这页给需要编译驱动、准备源码示例或维护发行的人。普通应用直接[安装发布的 HAR](Getting-Started.md)，不需要先克隆仓库或安装 npm 维护依赖。
 
 ## 本机工具链
 
-使用 Node.js `>=22.19.0` 和已安装的 DevEco/HarmonyOS API-24 工具链。上游提取基线为 DevEco Studio 6.1.1.300。仓库不会下载或重新分发 SDK。
+驱动源码的构建基线是 Node.js `>=22.19.0`、DevEco Studio 6.1.1.300 和 HarmonyOS API 24。仓库不下载或重新分发 SDK。
 
-Windows 默认使用 `C:\Program Files\Huawei\DevEco Studio`。其他安装位置可设置 `DEVECO_HOME`；外部 SDK 使用 `DEVECO_SDK_HOME`；显式工具入口可通过 `HARMONYOS_HVIGORW` 和 `HARMONYOS_OHPM` 指定。
-
-在 [ArkDB 源码仓库](https://github.com/OrcaSQL-Workbench/ArkDB)根目录运行：
-
-```powershell
-npm ci --ignore-scripts
-npm run restore
-npm run drivers
-npm run pack -- --driver mysql
-```
-
-`--driver` 选择真实注册的 HAR 模块名，不是任意文件系统路径。当前只有 `mysql` / `@arkdb/mysql`，选择尚未实现的 `pgsql` 会明确失败。增加一个矩阵项不会产生可用的 PostgreSQL 驱动。
-
-输出为 `dist\arkdb-mysql-1.0.1.har`、同名 `.har.sha256` 和 `.manifest.json`。清单记录包身份、源码目录、源码指纹、大小和摘要；未提交候选的 `sourceClean` 为 `false`、`sourceCommit` 为 `null`，不能把当前 Git HEAD 冒充它的已审阅来源。
+环境变量、驱动选择、单 HAR 构建与产物位置以 ArkDB 的[构建指南](https://github.com/OrcaSQL-Workbench/ArkDB/blob/main/docs/building-drivers.md)为准。维护当前分支时读当前指南；重查 1.0.2 发布包时用[对应源码版本](https://github.com/OrcaSQL-Workbench/ArkDB/tree/f532d0c37adf4dbba7a1a313679f0024822ed752)。
 
 ## 运行 Worker 示例
 
-上游的 [examples/mysql-client](https://github.com/OrcaSQL-Workbench/ArkDB/tree/main/examples/mysql-client)是完整 Stage-model HAP，消费实际 HAR，不直接引用驱动源码：
+示例是完整 Stage 应用，不是驱动内部自动管理的 Worker 客户端。它消费实际 HAR，提供页面、Worker、DTO 和清理逻辑。
 
-```powershell
-npm run example:prepare
-npm run example:build
-```
+运行步骤集中在[示例 README](https://github.com/OrcaSQL-Workbench/ArkDB/blob/f532d0c37adf4dbba7a1a313679f0024822ed752/examples/mysql-client/README.md)。准备好匹配的 HAR 后，用 DevEco Studio 打开项目，配置自己的本地调试签名。仓库不附带签名身份。
 
-先完成上面的依赖恢复与 HAR 构建，再执行示例命令。用 DevEco Studio 打开 `examples\mysql-client`，选择兼容的 API-24 tablet/2in1 目标并配置自己的本地调试签名。仓库只生成未签名 HAP，不提供签名身份，也不声称完成设备运行。
-
-示例在 Worker 内连接、执行固定只读查询并关闭，展示服务器版本、精确 BIGINT/DECIMAL 和 NULL。它始终验证 TLS 身份；可选 CA 文件必须已在应用沙箱内可读。UI 不持久化密码，提交后清空密码输入框。
+把同样的结构接入自己的应用时，看 [Worker 集成](Worker-Integration.md)，不要复制示例的构建依赖到普通应用。
 
 ## 区分验证层次
 
-| 命令 | 覆盖范围 |
+| 检查 | 能说明什么 |
 | --- | --- |
-| `npm run check` | 不需要 SDK 的工具测试及包、接口和导入检查 |
-| `npm run test:arkts` | 本地 Hypium 驱动测试 |
-| `npm run test:consumer` | 针对实际 HAR 编译示例 HAP/Worker 和包内 README 示例，运行离线示例生命周期测试 |
-| `npm run release:check` | 包与证据校验，以及不发布的 OHPM 检查 |
-| `npm run verify` | 完整本地验证、打包、消费者检查和不发布的预检 |
-| `npm run release:verify-download -- --driver mysql --tag mysql-v1.0.1` | 下载实际已发布资产，校验后安装并编译独立消费者；不回退到本地 `dist` 或驱动源码 |
+| 不需要 SDK 的工具测试 | 工具、包和接口约束是否符合要求 |
+| ArkTS 编译与原生测试 | 当前源码是否能编译，离线契约与协议行为是否通过 |
+| 实际 HAR 消费检查 | 选定包的安装、导出、包内示例和样例 HAP 能否编译 |
+| 公开下载验收 | 下载的发行文件是否一致，能否被独立消费者使用 |
+| 目标设备/服务器测试 | 实际网络、平台信任、认证、事务、取消和复用行为 |
 
-编译通过、本地模拟通过、公开 HAR 可下载、OHPM 可获取和真实设备互操作是不同状态。当前工程预览不提供实机网络、TLS 或取消认证；MariaDB 还需要单独的兼容性证据。
+前几项不能替代最后一项。应用开发者需要了解的限制在[兼容性与升级](Compatibility-and-Upgrading.md#验证范围)，维护命令在[发行流程](https://github.com/OrcaSQL-Workbench/ArkDB/blob/main/docs/releasing.md)中。
 
 ## 本机构建，GitHub Release 分发
 
-当前发行路线不需要专用服务器或自托管 runner。维护者在已有开发电脑上构建和验证，再单独授权上传同一份字节；GitHub Actions 只运行工具链无关的 `check`，推送 tag 不会触发云端 HAR 编译。
+维护者在自己的开发电脑上构建并核对候选包，再经授权上传同一份字节。GitHub Actions 不安装 HarmonyOS SDK，也不会因为推送 tag 自动编译 HAR。
 
-审阅并提交源码，按所有者批准的 Git 流程准备与包版本及干净源码提交匹配的 annotated tag 后：
+准备、上传、部分上传恢复和下载验收，统一遵循[发行流程](https://github.com/OrcaSQL-Workbench/ArkDB/blob/main/docs/releasing.md)。不要重新发行或覆盖已经发布的同名资产。OHPM 发布是另一条可选路线，不是本地 HAR 安装的前提。
 
-```powershell
-npm run release:prepare -- --driver mysql --tag mysql-v1.0.1
-```
-
-该命令运行本地验证，生成 `dist\releases\mysql-v1.0.1` 下的不可变发行集合，包括明确允许的资产和 `release-set.json`。它不提交、不推送、不创建 tag，也不发布。
-
-远端 tag 已匹配且获得所有者明确的发行授权后，才使用单独的上传入口：
-
-```powershell
-npm run release:publish -- --driver mysql --tag mysql-v1.0.1 --confirm-publish
-```
-
-这里的 tag 仅展示当前版本的命令格式，不应重新发行或替换已发布资产。准备新版本时同步修改包版本、tag 和下载信息。上传不重新构建；同名冲突资产不能覆盖，部分上传或写入结果不确定时先核对远端状态，不盲目重试。
-
-详细授权、恢复与验收步骤以[上游发行流程](https://github.com/OrcaSQL-Workbench/ArkDB/blob/508adf42a6d7d485fe38c84cdf5c91322adf6e6d/docs/releasing.md)为准。OHPM 上架是独立的可选分发路线，不是消费本地 HAR 的前提。
+准备增加新驱动时，先读[共享驱动契约](https://github.com/OrcaSQL-Workbench/ArkDB/blob/main/docs/driver-contracts.md)；协议测试的上游来源记录在[测试来源说明](https://github.com/OrcaSQL-Workbench/ArkDB/blob/main/docs/protocol-test-provenance.md)中。新驱动需要自己的实现和验收，增加一个配置项不代表已经支持它。
