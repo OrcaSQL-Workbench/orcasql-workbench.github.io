@@ -167,6 +167,22 @@ a:hover .arrow { transform: translateX(3px); }
 .docs-article pre { padding: 15px 17px; background: #eef3f9; border: 1px solid #dbe5ef; border-radius: 6px; overflow-x: auto; margin: 17px 0 23px; }
 .docs-article code { font: 0.9em/1.7 Consolas, "SFMono-Regular", monospace; }
 .docs-article pre code { white-space: pre; }
+.docs-article pre code [class^="tok-k"] { color: #1d4fc4; }
+.docs-article pre code [class^="tok-s"],
+.docs-article pre code .tok-dl { color: #226543; }
+.docs-article pre code [class^="tok-c"] { color: #596a78; }
+.docs-article pre code [class^="tok-m"],
+.docs-article pre code .tok-il { color: #8b4319; }
+.docs-article pre code .tok-nb,
+.docs-article pre code .tok-bp,
+.docs-article pre code .tok-nc,
+.docs-article pre code .tok-ne { color: #724099; }
+.docs-article pre code .tok-n,
+.docs-article pre code .tok-nf,
+.docs-article pre code .tok-fm { color: #225594; }
+.docs-article pre code .tok-na,
+.docs-article pre code .tok-nv,
+.docs-article pre code .tok-nt { color: #7d3c76; }
 .docs-article img { max-width: 100%; height: auto; }
 .docs-article blockquote { margin: 20px 0; padding: 15px 18px; background: #eef3f9; color: #435e73; border-radius: 6px; }
 .docs-article blockquote p:last-child { margin-bottom: 0; }
