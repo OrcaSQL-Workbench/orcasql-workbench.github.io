@@ -9,6 +9,9 @@ import unicodedata
 from urllib.parse import quote, unquote, urlsplit, urlunsplit
 
 from markdown_it import MarkdownIt
+from pygments import highlight
+from pygments.formatters import HtmlFormatter
+from pygments.lexers import get_lexer_by_name
 
 
 PROJECT = Path(__file__).resolve().parent.parent
@@ -16,6 +19,12 @@ REPOSITORY_URL = "https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.
 ASSET_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".svg"}
 SITE_MANIFEST = ".docs-generated-manifest.json"
 WIKI_MANIFEST = ".docs-sync-manifest.json"
+CODE_LEXERS = {
+    "typescript": "typescript",
+    "json5": "json5",
+    "powershell": "powershell",
+    "sql": "mysql",
+}
 
 
 @dataclass(frozen=True)
@@ -53,6 +62,19 @@ MANUALS = {
         "OrcaSQL-Workbench/ArkDB",
     ),
 }
+
+
+def highlight_code(code, language, _attributes):
+    lexer_name = CODE_LEXERS.get(language)
+    if lexer_name is None:
+        return ""
+    # Pygments strips leading BOMs and adds a newline to an unterminated final line.
+    if code.startswith("\ufeff") or not code.endswith("\n"):
+        return ""
+    lexer = get_lexer_by_name(
+        lexer_name, stripnl=False, stripall=False, ensurenl=False, tabsize=0,
+    )
+    return highlight(code, lexer, HtmlFormatter(nowrap=True, noclasses=False, classprefix="tok-"))
 
 
 def code_chunks(text):
@@ -240,6 +262,7 @@ class Documentation:
 
     def html(self, page):
         renderer, tokens, environment = self.parsed(page)
+        renderer.options["highlight"] = highlight_code
         identifiers = {}
         for index, token in enumerate(tokens):
             if token.type == "heading_open":
