@@ -312,6 +312,18 @@ class DocumentationTests(unittest.TestCase):
         self.assertEqual((site / "assets" / "screen.svg").read_bytes(),
                          (wiki / "assets" / "screen.svg").read_bytes())
 
+    def test_wide_layout_is_scoped_to_arkdb(self):
+        for name, manual in MANUALS.items():
+            destination = self.root / name
+            build_site(self.source, destination, manual=manual)
+            for path in destination.rglob("*.html"):
+                with self.subTest(manual=name, page=path.relative_to(destination)):
+                    html = path.read_text(encoding="utf-8")
+                    classes = re.search(r'<main class="([^"]+)"', html).group(1).split()
+                    self.assertIn("docs-main", classes)
+                    self.assertIn("wrap", classes)
+                    self.assertEqual("docs-main-wide" in classes, name == "arkdb")
+
     def test_wiki_footer_points_to_canonical_source_not_target_repository(self):
         for name, manual in MANUALS.items():
             with self.subTest(manual=name):

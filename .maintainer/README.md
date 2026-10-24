@@ -68,8 +68,10 @@ python scripts\build_privacy.py --check
 - `site\index.html`：网站首页。
 - `privacy\policy-zh-Hans.json`：隐私政策唯一编辑源。
 - `site\privacy\index.html`：生成的当前隐私政策。
-- `site\assets\site.css`：首页和错误页样式。
+- `site\assets\site.css`：首页、错误页和手册的共享样式。
 - `site\assets\privacy.css`：隐私政策页面样式。
+
+ArkDB 手册通过 `docs-main-wide` 让正文填满目录右侧的可用空间，外层沿用首页 `wrap` 的宽度上限和响应式边距；窄屏仍切换为单列。Workbench 用户文档保留原有正文行宽。
 
 正式地址是 `https://orcasql-workbench.github.io/`。网站部署在组织根路径 `/`，不是仓库名下面。站内绝对链接从 `/` 开始，404 页的资源链接和返回首页链接也一样。
 
