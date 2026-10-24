@@ -21,6 +21,10 @@ ArkDB 手册使用同样的文件和导航规则，图片放在 `docs\arkdb\asse
 
 文档之间的链接直接写源文件名，例如 `Connections.md`；图片路径写成 `assets/图片名`。发布时，脚本会转换为网站或 Wiki 对应的链接。代码块和行内代码中的内容不会转换。
 
+手册围栏代码在 Python 构建期使用 Pygments 高亮，不为高亮加载浏览器脚本或第三方资源；页面仍可加载白名单中的主题脚本。支持 `typescript`、`json5`、`powershell` 和 `sql`，其中 `sql` 按 MySQL 方言处理。ArkTS 示例继续使用 `typescript` 标记，仅作词法着色，不代表编译或语义检查；Wiki 仍导出原 Markdown，不包含网页高亮标签。
+
+`text`、无语言标记、未知语言以及以 BOM 开头或末行无换行的代码块保留纯文本渲染，避免高亮器改变可复制内容。新增语言时更新 `scripts\build_docs.py` 的 `CODE_LEXERS` 和回归用例。高亮选择器限定在 `site\assets\site.css` 的 `.docs-article pre code` 下，保留原有浅色默认值；深色配色由 `site\assets\theme.css` 提供，随页面主题切换，打印仍使用浅色配色。不直接粘贴 Pygments 生成的全局样式，也不为显示效果修改示例正文。
+
 不要使用 Wiki 专属的 `[[页面]]` 链接语法，也不要直接修改生成的 `site\docs`、`site\arkdb` 或 Wiki 页面，以免被下次同步覆盖。
 
 用户指南不标注固定的适用版本，但要写清楚当前支持的功能。反馈问题时，仍需提供实际使用的 Workbench 版本。

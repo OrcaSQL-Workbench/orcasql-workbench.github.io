@@ -48,6 +48,11 @@
     --theme-tag-text: #ceddf0;
     --theme-heading: #d2e4f6;
     --theme-code: #111e2d;
+    --theme-code-string: #a4d7b1;
+    --theme-code-number: #e6b17d;
+    --theme-code-type: #d2b0f3;
+    --theme-code-name: #9dc5fa;
+    --theme-code-variable: #e7accf;
   }
 }
 
@@ -71,6 +76,11 @@
     --theme-tag-text: #ceddf0;
     --theme-heading: #d2e4f6;
     --theme-code: #111e2d;
+    --theme-code-string: #a4d7b1;
+    --theme-code-number: #e6b17d;
+    --theme-code-type: #d2b0f3;
+    --theme-code-name: #9dc5fa;
+    --theme-code-variable: #e7accf;
   }
 }
 

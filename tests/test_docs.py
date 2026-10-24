@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 from build_docs import MANUALS, Documentation, SITE_MANIFEST, WIKI_MANIFEST, build_site, export_wiki, main, write_managed_files
+from validate_site import Page, script_errors
 
 
 class NavigationParser(HTMLParser):
@@ -33,6 +34,35 @@ class NavigationParser(HTMLParser):
             self.list_depth -= 1
         if tag == "nav":
             self.active = False
+
+
+class CodeBlockParser(HTMLParser):
+    def __init__(self, html):
+        super().__init__(convert_charrefs=True)
+        self.blocks = []
+        self.in_pre = False
+        self.current = None
+        self.feed(html)
+        self.close()
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "pre":
+            self.in_pre = True
+        if tag == "code" and self.in_pre:
+            self.current = {"attrs": dict(attrs), "text": "", "tags": []}
+            self.blocks.append(self.current)
+        elif self.current is not None:
+            self.current["tags"].append((tag, dict(attrs)))
+
+    def handle_endtag(self, tag):
+        if tag == "code":
+            self.current = None
+        if tag == "pre":
+            self.in_pre = False
+
+    def handle_data(self, data):
+        if self.current is not None:
+            self.current["text"] += data
 
 
 class DocumentationTests(unittest.TestCase):
@@ -192,6 +222,104 @@ class DocumentationTests(unittest.TestCase):
         self.assertIn("`[示例](Guide.md)`", wiki)
         self.assertIn("```markdown\n[示例](Guide.md)\n```", wiki)
         self.assertIn("[指南](%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97)", wiki)
+
+    def test_syntax_highlighting_is_static_in_both_manuals(self):
+        examples = [
+            ("typescript", "const value: string = 'hello';\n"),
+            ("json5", "{unquoted: 'hello', // comment\n trailing: true,}\n"),
+            ("powershell", "$value = 'hello'\nWrite-Host $value\n"),
+            ("sql", "# MySQL comment\nSELECT 0xFF, `name` FROM accounts;\n"),
+        ]
+        fences = "\n".join(f"```{language}\n{code}```\n" for language, code in examples)
+        self.write("Home.md", "# 文档首页\n\n" + fences)
+        for name, manual in MANUALS.items():
+            with self.subTest(manual=name):
+                destination = self.root / name
+                build_site(self.source, destination, manual=manual)
+                html = (destination / "index.html").read_text(encoding="utf-8")
+                blocks = CodeBlockParser(html).blocks
+                self.assertEqual(len(blocks), len(examples))
+                for block, (language, code) in zip(blocks, examples):
+                    with self.subTest(language=language):
+                        self.assertEqual(block["attrs"], {"class": "language-" + language})
+                        self.assertEqual(block["text"], code)
+                        self.assertTrue(block["tags"], "Expected highlighted token spans")
+                        for tag, attrs in block["tags"]:
+                            self.assertEqual(tag, "span")
+                            self.assertEqual(set(attrs), {"class"})
+                            self.assertTrue(attrs["class"].startswith("tok-"))
+                            self.assertNotEqual(attrs["class"], "tok-err")
+                self.assertEqual(script_errors(Page(destination / "index.html")), [])
+                self.assertNotIn("style=", html)
+
+    def test_highlighting_preserves_whitespace_and_html_as_code_text(self):
+        code = '\n\tconst value: string = \'<img src=x onerror="alert(1)"> & 中文\';\n\n'
+        self.write("Home.md", "# 文档首页\n\n```typescript title=\"example\"\n" + code + "```\n")
+        documentation = Documentation(self.source)
+        html = documentation.html(documentation.pages[0])
+        blocks = CodeBlockParser(html).blocks
+        self.assertEqual(len(blocks), 1)
+        self.assertEqual(blocks[0]["text"], code)
+        self.assertTrue(blocks[0]["tags"])
+        for tag, attrs in blocks[0]["tags"]:
+            self.assertEqual(tag, "span")
+            self.assertEqual(set(attrs), {"class"})
+        self.assertNotIn("<img", html)
+        self.assertNotIn("title=", html)
+
+    def test_plain_fences_and_inline_code_keep_their_default_rendering(self):
+        code = "<script>alert('example')</script> & text\n"
+        for language in ("", "text", "not-a-language", 'unknown" onmouseover="alert(1)'):
+            with self.subTest(language=language):
+                self.write("Home.md", "# 文档首页\n\n`const value = 1;`\n\n```" + language + "\n" + code + "```\n")
+                documentation = Documentation(self.source)
+                html = documentation.html(documentation.pages[0])
+                blocks = CodeBlockParser(html).blocks
+                self.assertEqual(len(blocks), 1)
+                self.assertEqual(blocks[0]["text"], code)
+                self.assertEqual(blocks[0]["tags"], [])
+                self.assertIn("<code>const value = 1;</code>", html)
+                self.assertNotIn("<script", html)
+                self.assertNotIn(' onmouseover="', html)
+
+    def test_bom_and_unterminated_code_remain_lossless_plain_text(self):
+        examples = [
+            ("\ufeffconst value = 1;\n", "```\n"),
+            ("const value = 1;", ""),
+            ("", "```\n"),
+        ]
+        for code, closing in examples:
+            with self.subTest(code=repr(code)):
+                self.write("Home.md", "# 文档首页\n\n```typescript\n" + code + closing)
+                documentation = Documentation(self.source)
+                blocks = CodeBlockParser(documentation.html(documentation.pages[0])).blocks
+                self.assertEqual(len(blocks), 1)
+                self.assertEqual(blocks[0]["text"], code)
+                self.assertEqual(blocks[0]["tags"], [])
+
+    def test_syntax_highlighting_keeps_wiki_code_plain(self):
+        code = "const destination: string = '[example](Guide.md)';\n"
+        fence = "```typescript\n" + code + "```\n"
+        self.write("Home.md", "# 文档首页\n\n[指南](Guide.md)\n\n" + fence)
+        site, wiki = self.root / "site", self.root / "wiki"
+        build_site(self.source, site)
+        export_wiki(self.source, wiki)
+        html = (site / "index.html").read_text(encoding="utf-8")
+        self.assertTrue(CodeBlockParser(html).blocks[0]["tags"])
+        exported = (wiki / "Home.md").read_text(encoding="utf-8")
+        self.assertIn(fence, exported)
+        self.assertIn("[指南](%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97)", exported)
+        self.assertNotIn("<span", exported)
+
+    def test_highlighting_preserves_all_published_code_blocks(self):
+        for manual in MANUALS.values():
+            documentation = Documentation(manual.source, manual)
+            for page in documentation.pages:
+                with self.subTest(manual=manual.product, page=page.source):
+                    _, tokens, _ = documentation.parsed(page)
+                    expected = [token.content for token in tokens if token.type in ("fence", "code_block")]
+                    blocks = CodeBlockParser(documentation.html(page)).blocks
+                    self.assertEqual([block["text"] for block in blocks], expected)
 
     def test_reference_links_are_rewritten(self):
         self.write("Home.md", "# 文档首页\n\n[指南][guide]\n\n[guide]: Guide.md\n")

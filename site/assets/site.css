@@ -170,6 +170,22 @@ a:hover .arrow { transform: translateX(3px); }
 .docs-article pre { padding: 15px 17px; background: var(--theme-code, #eef3f9); border: 1px solid var(--theme-border, #dbe5ef); border-radius: 6px; overflow-x: auto; margin: 17px 0 23px; }
 .docs-article code { font: 0.9em/1.7 Consolas, "SFMono-Regular", monospace; }
 .docs-article pre code { white-space: pre; }
+.docs-article pre code [class^="tok-k"] { color: var(--blue); }
+.docs-article pre code [class^="tok-s"],
+.docs-article pre code .tok-dl { color: var(--theme-code-string, #226543); }
+.docs-article pre code [class^="tok-c"] { color: var(--theme-muted, #596a78); }
+.docs-article pre code [class^="tok-m"],
+.docs-article pre code .tok-il { color: var(--theme-code-number, #8b4319); }
+.docs-article pre code .tok-nb,
+.docs-article pre code .tok-bp,
+.docs-article pre code .tok-nc,
+.docs-article pre code .tok-ne { color: var(--theme-code-type, #724099); }
+.docs-article pre code .tok-n,
+.docs-article pre code .tok-nf,
+.docs-article pre code .tok-fm { color: var(--theme-code-name, #225594); }
+.docs-article pre code .tok-na,
+.docs-article pre code .tok-nv,
+.docs-article pre code .tok-nt { color: var(--theme-code-variable, #7d3c76); }
 .docs-article img { max-width: 100%; height: auto; }
 .docs-article blockquote { margin: 20px 0; padding: 15px 18px; background: var(--theme-code, #eef3f9); color: var(--theme-muted, #435e73); border-radius: 6px; }
 .docs-article blockquote p:last-child { margin-bottom: 0; }
