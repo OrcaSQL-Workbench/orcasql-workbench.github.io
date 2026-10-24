@@ -172,5 +172,36 @@ class WorkflowSourceTests(unittest.TestCase):
                 main()
 
 
+class WebsiteWorkflowGateTests(unittest.TestCase):
+    def setUp(self):
+        workflow = (
+            Path(__file__).resolve().parent.parent / ".github" / "workflows" / "pages.yml"
+        ).read_text(encoding="utf-8")
+        self.validate, self.deploy = workflow.split("\n  validate:\n", 1)[1].split("\n  deploy:\n", 1)
+
+    def test_required_validation_runs_after_any_source_result(self):
+        self.assertIn("    needs: source\n", self.validate)
+        self.assertIn("    if: always()\n", self.validate)
+        self.assertNotIn("continue-on-error:", self.validate)
+
+    def test_validation_fails_before_checkout_when_source_is_unsuccessful(self):
+        first_step = self.validate.split("    steps:\n", 1)[1].split("\n      - name:", 1)[0]
+        self.assertIn("- name: Require successful source resolution", first_step)
+        self.assertIn("if: always() && needs.source.result != 'success'\n", first_step)
+        self.assertIn("SOURCE_RESULT: ${{ needs.source.result }}\n", first_step)
+        self.assertIn('echo "::error::', first_step)
+        self.assertIn("          exit 1", first_step.splitlines())
+        self.assertNotIn("continue-on-error:", first_step)
+
+    def test_deployment_still_requires_successful_source_and_validation(self):
+        self.assertIn("    needs: [source, validate]\n", self.deploy)
+        self.assertIn(
+            "    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'\n",
+            self.deploy,
+        )
+        self.assertNotIn("always()", self.deploy)
+        self.assertNotIn("continue-on-error:", self.deploy)
+
+
 if __name__ == "__main__":
     unittest.main()

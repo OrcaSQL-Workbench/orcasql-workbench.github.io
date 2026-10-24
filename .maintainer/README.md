@@ -117,6 +117,8 @@ python -m http.server 4178 --bind 127.0.0.1 --directory site
 
 `scripts\workflow_source.py` 为两条工作流解析来源。PR 事件直接使用事件编号；`push` 事件通过只读 GitHub API 查询提交关联的 PR，只有合并提交 SHA 和目标分支都匹配、且结果唯一时才使用 PR 编号。没有唯一匹配时显示 `Push <短提交 SHA>`，不根据提交说明猜测；API 请求或响应异常会明确失败，不冒充普通 push。来源解析任务只使用 `GITHUB_TOKEN` 的仓库内容和 PR 读取权限，不使用 Wiki 写入令牌。
 
+网站校验 job 使用 `always()`，不会因前置来源解析失败而被跳过；首步检查来源解析结果，任何非 `success` 状态都会明确报错并使校验失败，防止 skipped 的 required check 放行未经校验的 PR。部署仍要求来源解析和网站校验都成功。
+
 顶层 `run-name` 在 job 执行前确定，不能引用来源解析任务的输出，因此 push 运行标题保留原提交说明。标准合并提交说明会包含 PR 编号；直接 push 或自定义说明不保证包含编号，内部发布 job 仍按 API 结果标记。网站一次部署整个 `site`，包含 Workbench 和 ArkDB 两份手册，不拆成两个产品发布任务。
 
 如分支保护此前绑定了旧检查名 `Validate site`，需将其一次性更新为 `Validate Website + Docs`；之后该 PR 检查名保持固定。
