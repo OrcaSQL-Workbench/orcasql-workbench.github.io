@@ -1,4 +1,5 @@
 import json
+from html.parser import HTMLParser
 from pathlib import Path
 import re
 import sys
@@ -9,6 +10,29 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 from build_docs import MANUALS, Documentation, SITE_MANIFEST, WIKI_MANIFEST, build_site, export_wiki, main, write_managed_files
+
+
+class NavigationParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.active = False
+        self.list_depth = 0
+        self.links = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "nav" and attrs.get("aria-label", "").endswith("目录"):
+            self.active = True
+        if self.active and tag == "ul":
+            self.list_depth += 1
+        if self.active and tag == "a":
+            self.links.append((attrs["href"], self.list_depth))
+
+    def handle_endtag(self, tag):
+        if self.active and tag == "ul":
+            self.list_depth -= 1
+        if tag == "nav":
+            self.active = False
 
 
 class DocumentationTests(unittest.TestCase):
@@ -56,6 +80,28 @@ class DocumentationTests(unittest.TestCase):
         sidebar = (wiki / "_Sidebar.md").read_text(encoding="utf-8")
         self.assertIn("## 开始使用\n\n- [文档首页](Home)", sidebar)
         self.assertIn("## MySQL 使用指南\n\n- [使用指南](%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97)", sidebar)
+
+    def test_grouped_pages_are_nested_under_their_sections(self):
+        self.grouped_documentation()
+        site = self.root / "site"
+        build_site(self.source, site)
+        parser = NavigationParser()
+        parser.feed((site / "guide" / "index.html").read_text(encoding="utf-8"))
+        self.assertEqual(parser.links, [("/docs/", 2), ("/docs/guide/", 2)])
+
+    def test_both_published_manuals_have_section_hierarchy(self):
+        for manual in MANUALS.values():
+            with self.subTest(manual=manual.product):
+                documentation = Documentation(manual.source, manual)
+                self.assertTrue(all(documentation.navigation))
+                site = self.root / manual.site_path.strip("/")
+                build_site(manual.source, site, manual=manual)
+                parser = NavigationParser()
+                parser.feed((site / "index.html").read_text(encoding="utf-8"))
+                self.assertEqual(
+                    parser.links,
+                    [(page.site_url, 2) for pages in documentation.navigation.values() for page in pages],
+                )
 
     def test_hidden_legacy_pages_are_linkable_and_exported_but_not_in_navigation(self):
         self.pages.append({

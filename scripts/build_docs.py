@@ -345,16 +345,22 @@ def write_managed_files(root, files, manifest_name):
 
 def site_page(documentation, page):
     manual = documentation.manual
-    navigation = "\n".join(
-        (f'<h2 class="docs-navigation-section">{escape(section)}</h2>\n' if section else "")
-        + "\n".join(
-            f'<a href="{escape(item.site_url, quote=True)}"'
+    groups = []
+    for section, pages in documentation.navigation.items():
+        links = "\n".join(
+            f'<li><a href="{escape(item.site_url, quote=True)}"'
             + (' aria-current="page"' if item == page else "")
-            + f">{escape(item.title)}</a>"
+            + f">{escape(item.title)}</a></li>"
             for item in pages
         )
-        for section, pages in documentation.navigation.items()
-    )
+        if section:
+            groups.append(
+                f'<li><h2 class="docs-navigation-section">{escape(section)}</h2>\n'
+                f"<ul>{links}</ul></li>"
+            )
+        else:
+            groups.append(links)
+    navigation = "<ul>" + "\n".join(groups) + "</ul>"
     navigation_class = "docs-navigation" + (" docs-navigation-grouped" if any(documentation.navigation) else "")
     body = documentation.html(page)
     source_url = REPOSITORY_URL + "/blob/main/" + manual.source_path + "/" + quote(page.source, safe="")

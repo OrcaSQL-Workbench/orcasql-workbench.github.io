@@ -142,12 +142,15 @@ a:hover .arrow { transform: translateX(3px); }
 .docs-main { display: grid; grid-template-columns: 218px minmax(0, 1fr); gap: 36px; align-items: start; padding-top: 31px; padding-bottom: 55px; }
 .docs-navigation { position: sticky; top: 20px; min-width: 0; color: #455d70; }
 .docs-navigation summary { min-height: 44px; padding: 9px 12px; font-weight: 600; cursor: pointer; }
-.docs-navigation nav { display: grid; gap: 4px; padding-top: 6px; }
+.docs-navigation nav { padding-top: 6px; }
+.docs-navigation ul { display: grid; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.docs-navigation li { min-width: 0; }
 .docs-navigation nav a { display: block; min-height: 44px; padding: 9px 12px; border-radius: 5px; font-size: 14px; }
 .docs-navigation nav a[aria-current="page"] { color: var(--blue); background: #eaf0fa; font-weight: 600; }
 .docs-navigation-grouped { max-height: calc(100vh - 40px); overflow-y: auto; padding-right: 4px; }
-.docs-navigation nav .docs-navigation-section { margin: 18px 12px 4px; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
-.docs-navigation nav .docs-navigation-section:first-child { margin-top: 4px; }
+.docs-navigation nav .docs-navigation-section { margin: 18px 12px 8px; font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.docs-navigation nav > ul > li:first-child .docs-navigation-section { margin-top: 4px; }
+.docs-navigation-grouped nav ul ul { margin-left: 12px; padding-left: 8px; border-left: 1px solid var(--line); }
 .docs-navigation-grouped a:focus-visible { outline-offset: -3px; }
 .docs-article { min-width: 0; max-width: 78ch; padding: 34px 38px; background: #fff; border: 1px solid var(--line); border-radius: 11px; line-height: 1.85; overflow-wrap: anywhere; }
 .docs-article h1 { font-size: 34px; font-weight: 650; margin-bottom: 23px; color: #17394e; }
@@ -202,11 +205,11 @@ a:hover .arrow { transform: translateX(3px); }
   .error-main { padding-top: 60px; }
   .docs-main { grid-template-columns: minmax(0, 1fr); gap: 20px; padding-top: 19px; }
   .docs-navigation { position: static; }
-  .docs-navigation nav { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 7px; }
+  .docs-navigation nav > ul { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 7px; }
+  .docs-navigation nav > ul > li { flex: 0 0 auto; }
   .docs-navigation nav a { flex: 0 0 auto; white-space: nowrap; }
   .docs-navigation-grouped { max-height: 260px; }
-  .docs-navigation-grouped nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow-x: visible; }
-  .docs-navigation-grouped nav .docs-navigation-section { grid-column: 1 / -1; }
+  .docs-navigation-grouped nav > ul { display: grid; overflow-x: visible; }
   .docs-navigation-grouped nav a { white-space: normal; }
   .docs-article { padding: 23px 20px; border-radius: 8px; }
   .docs-article h1 { font-size: 28px; }
