@@ -88,6 +88,8 @@ class Document:
     title: str
     content: str
     site_path: str = "/docs/"
+    section: str = ""
+    in_navigation: bool = True
 
     @property
     def site_url(self):
@@ -124,7 +126,8 @@ class Documentation:
         self.source = source.resolve()
         self.manual = manual
         manifest = json.loads((self.source / "navigation.json").read_text(encoding="utf-8"))
-        if not isinstance(manifest, dict) or manifest.get("version") != 1:
+        version = manifest.get("version") if isinstance(manifest, dict) else None
+        if type(version) is not int or version not in (1, 2):
             raise ValueError("Unsupported documentation navigation manifest.")
         entries = manifest.get("pages")
         if not isinstance(entries, list) or not entries:
@@ -132,8 +135,13 @@ class Documentation:
         self.pages = []
         sources, slugs, wiki_names = set(), set(), set()
         for entry in entries:
-            if not isinstance(entry, dict) or set(entry) != {"source", "slug", "title"}:
-                raise ValueError("Each page needs exactly source, slug and title.")
+            required = {"source", "slug", "title"}
+            optional = set()
+            if version == 2:
+                required.add("section")
+                optional.add("nav")
+            if not isinstance(entry, dict) or not required <= entry.keys() or entry.keys() - required - optional:
+                raise ValueError("Invalid documentation page fields for this navigation version.")
             filename, slug, title = entry["source"], entry["slug"], entry["title"]
             if not all(isinstance(value, str) for value in (filename, slug, title)):
                 raise ValueError("Documentation page properties must be strings.")
@@ -145,8 +153,17 @@ class Documentation:
                 raise ValueError(f"Invalid documentation title: {title}")
             if re.search(r'[\\/:*?"<>|\r\n]', title):
                 raise ValueError(f"Title cannot be used as a Wiki filename: {title}")
+            section = entry.get("section", "")
+            if version == 2 and (
+                not isinstance(section, str) or not section.strip() or section != section.strip()
+                or "\n" in section or "\r" in section
+            ):
+                raise ValueError(f"Invalid navigation section for {filename}.")
+            in_navigation = entry.get("nav", True)
+            if not isinstance(in_navigation, bool):
+                raise ValueError(f"Navigation visibility must be a boolean: {filename}")
             content = safe_path(self.source, filename).read_text(encoding="utf-8")
-            page = Document(filename, slug, title, content, manual.site_path)
+            page = Document(filename, slug, title, content, manual.site_path, section, in_navigation)
             if filename in sources or slug in slugs or page.wiki_name.casefold() in wiki_names:
                 raise ValueError(f"Duplicate documentation source, slug or Wiki title: {filename}")
             sources.add(filename)
@@ -155,10 +172,16 @@ class Documentation:
             self.pages.append(page)
         if self.pages[0].slug or sum(page.slug == "" for page in self.pages) != 1:
             raise ValueError("The first page must be the only documentation homepage.")
+        if not self.pages[0].in_navigation:
+            raise ValueError("The documentation homepage must remain visible.")
         unlisted = {path.name for path in self.source.glob("*.md")} - sources
         if unlisted:
             raise ValueError(f"Markdown pages missing from navigation: {', '.join(sorted(unlisted))}")
         self.by_source = {page.source: page for page in self.pages}
+        self.navigation = {}
+        for page in self.pages:
+            if page.in_navigation:
+                self.navigation.setdefault(page.section, []).append(page)
 
     def link(self, page, destination, surface, image=False):
         url = urlsplit(destination)
@@ -323,11 +346,16 @@ def write_managed_files(root, files, manifest_name):
 def site_page(documentation, page):
     manual = documentation.manual
     navigation = "\n".join(
-        f'<a href="{escape(item.site_url, quote=True)}"'
-        + (' aria-current="page"' if item == page else "")
-        + f">{escape(item.title)}</a>"
-        for item in documentation.pages
+        (f'<h2 class="docs-navigation-section">{escape(section)}</h2>\n' if section else "")
+        + "\n".join(
+            f'<a href="{escape(item.site_url, quote=True)}"'
+            + (' aria-current="page"' if item == page else "")
+            + f">{escape(item.title)}</a>"
+            for item in pages
+        )
+        for section, pages in documentation.navigation.items()
     )
+    navigation_class = "docs-navigation" + (" docs-navigation-grouped" if any(documentation.navigation) else "")
     body = documentation.html(page)
     source_url = REPOSITORY_URL + "/blob/main/" + manual.source_path + "/" + quote(page.source, safe="")
     wiki_url = manual.wiki_url + "/" + page.wiki_route
@@ -351,7 +379,7 @@ def site_page(documentation, page):
     <a class="repo-link" href="{manual.repository_url}" target="_blank" rel="noopener noreferrer">GitHub</a>
   </header>
   <main class="docs-main wrap" id="main" tabindex="-1">
-    <details class="docs-navigation" open>
+    <details class="{navigation_class}" open>
       <summary>{escape(manual.title)}</summary>
       <nav aria-label="{escape(manual.title, quote=True)}目录">{navigation}</nav>
     </details>
@@ -380,8 +408,10 @@ def export_wiki(source, destination, *, manual=MANUALS["workbench"]):
     files = documentation.assets()
     for page in documentation.pages:
         files[page.wiki_name + ".md"] = documentation.wiki_markdown(page).encode("utf-8")
-    sidebar = f"# {manual.title}\n\n" + "\n".join(
-        f"- [{page.title}]({page.wiki_route})" for page in documentation.pages
+    sidebar = f"# {manual.title}\n\n" + "\n\n".join(
+        (f"## {section}\n\n" if section else "")
+        + "\n".join(f"- [{page.title}]({page.wiki_route})" for page in pages)
+        for section, pages in documentation.navigation.items()
     ) + "\n"
     footer = (
         f"本文档由文档仓库的 `{manual.source_path}` 目录自动同步。请在文档仓库提交修改，"

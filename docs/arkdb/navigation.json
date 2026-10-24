@@ -1,12 +1,22 @@
 {
-  "version": 1,
+  "version": 2,
   "pages": [
-    { "source": "Home.md", "slug": "", "title": "ArkDB 开发者手册" },
-    { "source": "Getting-Started.md", "slug": "getting-started", "title": "下载与快速接入" },
-    { "source": "Connections.md", "slug": "connections", "title": "连接配置与 TLS" },
-    { "source": "Queries.md", "slug": "queries", "title": "查询、结果与流式读取" },
-    { "source": "Transactions-and-Cancellation.md", "slug": "transactions-and-cancellation", "title": "事务、取消与超时" },
-    { "source": "API-Reference.md", "slug": "api-reference", "title": "公共接口与错误处理" },
-    { "source": "Building-and-Releasing.md", "slug": "building-and-releasing", "title": "构建、示例与发行" }
+    { "source": "Home.md", "slug": "", "title": "ArkDB 开发者手册", "section": "开始使用" },
+    { "source": "Getting-Started.md", "slug": "getting-started", "title": "下载与快速接入", "section": "开始使用" },
+    { "source": "Worker-Integration.md", "slug": "worker-integration", "title": "Worker 集成", "section": "开始使用" },
+    { "source": "Connections.md", "slug": "connections", "title": "连接配置与 TLS", "section": "MySQL 使用指南" },
+    { "source": "Queries.md", "slug": "queries", "title": "查询、结果与流式读取", "section": "MySQL 使用指南" },
+    { "source": "Streaming.md", "slug": "streaming", "title": "有界流式读取", "section": "MySQL 使用指南" },
+    { "source": "Transactions.md", "slug": "transactions", "title": "事务", "section": "MySQL 使用指南" },
+    { "source": "Cancellation-and-Timeouts.md", "slug": "cancellation-and-timeouts", "title": "取消与超时", "section": "MySQL 使用指南" },
+    { "source": "Metadata-and-Metrics.md", "slug": "metadata-and-metrics", "title": "元数据与服务器指标", "section": "MySQL 使用指南" },
+    { "source": "API-Reference.md", "slug": "api-reference", "title": "公共接口与错误处理", "section": "参考" },
+    { "source": "Configuration-Reference.md", "slug": "configuration-reference", "title": "配置参考", "section": "参考" },
+    { "source": "Data-Types-and-Results.md", "slug": "data-types-and-results", "title": "数据类型与结果", "section": "参考" },
+    { "source": "Errors-and-Logging.md", "slug": "errors-and-logging", "title": "错误与日志", "section": "参考" },
+    { "source": "Compatibility-and-Upgrading.md", "slug": "compatibility-and-upgrading", "title": "兼容性与升级", "section": "参考" },
+    { "source": "Troubleshooting.md", "slug": "troubleshooting", "title": "故障排查与问题反馈", "section": "故障排查" },
+    { "source": "Building-and-Releasing.md", "slug": "building-and-releasing", "title": "构建、示例与发行", "section": "贡献与维护" },
+    { "source": "Transactions-and-Cancellation.md", "slug": "transactions-and-cancellation", "title": "事务、取消与超时", "section": "MySQL 使用指南", "nav": false }
   ]
 }

@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import re
 import sys
 import tempfile
 import unittest
@@ -30,8 +31,98 @@ class DocumentationTests(unittest.TestCase):
     def write(self, name, text):
         (self.source / name).write_text(text, encoding="utf-8")
 
-    def write_navigation(self):
-        self.write("navigation.json", json.dumps({"version": 1, "pages": self.pages}, ensure_ascii=False))
+    def write_navigation(self, version=1):
+        self.write("navigation.json", json.dumps({"version": version, "pages": self.pages}, ensure_ascii=False))
+
+    def grouped_documentation(self):
+        self.pages[0]["section"] = "开始使用"
+        self.pages[1]["section"] = "MySQL 使用指南"
+        self.write_navigation(version=2)
+        try:
+            return Documentation(self.source)
+        except ValueError as error:
+            self.fail(f"Valid grouped navigation was rejected: {error}")
+
+    def test_grouped_sections_appear_in_the_website_and_wiki(self):
+        self.grouped_documentation()
+        site, wiki = self.root / "site", self.root / "wiki"
+        build_site(self.source, site)
+        export_wiki(self.source, wiki)
+        html = (site / "guide" / "index.html").read_text(encoding="utf-8")
+        navigation = re.search(r'<nav aria-label="用户文档目录">(.*?)</nav>', html, re.DOTALL).group(1)
+        self.assertLess(navigation.index(">开始使用</h2>"), navigation.index('href="/docs/"'))
+        self.assertLess(navigation.index(">MySQL 使用指南</h2>"), navigation.index('href="/docs/guide/"'))
+        self.assertIn('href="/docs/guide/" aria-current="page"', navigation)
+        sidebar = (wiki / "_Sidebar.md").read_text(encoding="utf-8")
+        self.assertIn("## 开始使用\n\n- [文档首页](Home)", sidebar)
+        self.assertIn("## MySQL 使用指南\n\n- [使用指南](%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97)", sidebar)
+
+    def test_hidden_legacy_pages_are_linkable_and_exported_but_not_in_navigation(self):
+        self.pages.append({
+            "source": "Legacy.md", "slug": "legacy", "title": "旧版入口",
+            "section": "旧链接", "nav": False,
+        })
+        self.write("Legacy.md", "# 旧版入口\n\n[指南](Guide.md)\n")
+        self.write("Home.md", "# 文档首页\n\n[原入口](Legacy.md)\n")
+        documentation = self.grouped_documentation()
+        site, wiki = self.root / "site", self.root / "wiki"
+        self.assertEqual(build_site(self.source, site), 3)
+        export_wiki(self.source, wiki)
+        html = (site / "index.html").read_text(encoding="utf-8")
+        navigation = re.search(r'<nav aria-label="用户文档目录">(.*?)</nav>', html, re.DOTALL).group(1)
+        self.assertNotIn("旧版入口", navigation)
+        self.assertNotIn("旧链接", navigation)
+        self.assertIn('href="/docs/legacy/"', documentation.html(documentation.pages[0]))
+        self.assertTrue((site / "legacy" / "index.html").is_file())
+        self.assertTrue((wiki / "旧版入口.md").is_file())
+        self.assertNotIn("旧版入口", (wiki / "_Sidebar.md").read_text(encoding="utf-8"))
+        self.assertIn("[原入口](%E6%97%A7%E7%89%88%E5%85%A5%E5%8F%A3)",
+                      (wiki / "Home.md").read_text(encoding="utf-8"))
+
+    def test_nonadjacent_pages_in_the_same_section_share_one_heading(self):
+        self.pages.append({
+            "source": "Next.md", "slug": "next", "title": "下一步", "section": "开始使用",
+        })
+        self.write("Next.md", "# 下一步\n")
+        self.grouped_documentation()
+        wiki = self.root / "wiki"
+        export_wiki(self.source, wiki)
+        sidebar = (wiki / "_Sidebar.md").read_text(encoding="utf-8")
+        self.assertEqual(sidebar.count("## 开始使用\n"), 1)
+        self.assertLess(sidebar.index("[下一步]"), sidebar.index("## MySQL 使用指南"))
+
+    def test_version_one_keeps_its_ungrouped_navigation(self):
+        site, wiki = self.root / "site", self.root / "wiki"
+        build_site(self.source, site)
+        export_wiki(self.source, wiki)
+        html = (site / "index.html").read_text(encoding="utf-8")
+        self.assertNotIn("docs-navigation-grouped", html)
+        self.assertEqual((wiki / "_Sidebar.md").read_text(encoding="utf-8"),
+                         "# 用户文档\n\n- [文档首页](Home)\n- [使用指南](%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97)\n")
+
+    def test_invalid_group_metadata_is_rejected(self):
+        for change in (
+            {"section": ""},
+            {"section": " 开始使用"},
+            {"section": "开始\n使用"},
+            {"section": []},
+            {"section": "开始使用", "nav": "false"},
+            {"section": "开始使用", "nav": 0},
+            {"section": "开始使用", "unexpected": True},
+        ):
+            with self.subTest(change=change):
+                self.pages[0] = {"source": "Home.md", "slug": "", "title": "文档首页", **change}
+                self.pages[1]["section"] = "MySQL 使用指南"
+                self.write_navigation(version=2)
+                with self.assertRaises(ValueError):
+                    Documentation(self.source)
+
+    def test_the_homepage_cannot_be_hidden(self):
+        self.pages[0].update({"section": "开始使用", "nav": False})
+        self.pages[1]["section"] = "MySQL 使用指南"
+        self.write_navigation(version=2)
+        with self.assertRaisesRegex(ValueError, "homepage.*visible"):
+            Documentation(self.source)
 
     def test_website_and_wiki_share_page_content_and_links(self):
         documentation = Documentation(self.source)
