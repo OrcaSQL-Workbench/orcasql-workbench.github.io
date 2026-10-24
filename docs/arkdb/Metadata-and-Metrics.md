@@ -119,7 +119,7 @@ Worker 使用实际配置和密码调用 `readOverviewText()`。计数是 `bigin
 
 这些方法都返回 Promise。先检查 `availability`（`ServerMetricsAvailability`），再读取 `data`。`data` 可能是 `null`；权限不足、Performance Schema 未启用或数据源不支持，不能当成指标为零。
 
-`errorKind`、`errorCode` 和 `errorSqlState` 描述不可用的原因；分类使用 `ServerMetricsErrorKind`。MariaDB 指标当前不支持。
+`errorKind`、`errorCode` 和 `errorSqlState` 描述不可用的原因；分类使用 `ServerMetricsErrorKind`。
 
 通用的 `features.metrics.readMetrics()` 返回 `ServerMetricsSnapshot`，以 `MetricMeasurement` 和 `MetricKind` 表达命名指标，不要求其他驱动实现 InnoDB 或复制线程模型。
 

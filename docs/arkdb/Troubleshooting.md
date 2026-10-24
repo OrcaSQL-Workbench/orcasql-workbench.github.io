@@ -50,7 +50,7 @@ MySQL 已发出的控制命令如果超时或结果丢失，目标连接会永�
 
 ## 服务器指标没有数据
 
-检查 `availability` 和错误类别，不把 `data: null` 当成零。核对账号权限、服务器产品和所需的 Performance Schema 数据源；MariaDB 指标不支持。
+检查 `availability` 和错误类别，不把 `data: null` 当成零。核对账号权限、服务器产品和所需的 Performance Schema 数据源。
 
 Provider 使用的连接仍要与其他操作串行。见[元数据与服务器指标](Metadata-and-Metrics.md)。
 
