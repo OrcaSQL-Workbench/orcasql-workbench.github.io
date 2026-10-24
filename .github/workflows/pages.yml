@@ -1,4 +1,12 @@
 name: Publish website
+run-name: >-
+  ${{ github.event_name == 'pull_request'
+      && format('PR #{0} | Validate | Website + Docs', github.event.pull_request.number)
+      || github.event_name == 'push'
+      && format('Publish Website | {0}', github.event.head_commit.message || github.sha)
+      || github.ref == 'refs/heads/main'
+      && format('Manual | Publish Website | {0}', github.ref_name)
+      || format('Manual | Validate | Website + Docs | {0}', github.ref_name) }}
 
 on:
   push:
@@ -11,6 +19,7 @@ on:
       - "scripts/build_docs.py"
       - "scripts/build_privacy.py"
       - "scripts/validate_site.py"
+      - "scripts/workflow_source.py"
       - "requirements-docs.txt"
       - ".gitattributes"
       - ".github/workflows/pages.yml"
@@ -24,6 +33,7 @@ on:
       - "scripts/build_docs.py"
       - "scripts/build_privacy.py"
       - "scripts/validate_site.py"
+      - "scripts/workflow_source.py"
       - "requirements-docs.txt"
       - ".gitattributes"
       - ".github/workflows/pages.yml"
@@ -37,11 +47,45 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  source:
+    name: Resolve run source | Website
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      label: ${{ steps.source.outputs.label }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Associate the run with its PR or commit
+        id: source
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/workflow_source.py
+
   validate:
-    name: Validate site
+    name: >-
+      ${{ github.event_name == 'pull_request'
+          && 'Validate Website + Docs'
+          || github.ref != 'refs/heads/main'
+          && format('{0} | Validate Website + Docs', needs.source.outputs.label)
+          || format('{0} | Pre-publish Check', needs.source.outputs.label) }}
+    needs: source
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Require successful source resolution
+        if: always() && needs.source.result != 'success'
+        env:
+          SOURCE_RESULT: ${{ needs.source.result }}
+        run: |
+          echo "::error::Run source resolution did not succeed ($SOURCE_RESULT)."
+          exit 1
       - name: Check out the repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -72,9 +116,9 @@ jobs:
           path: site
 
   deploy:
-    name: Deploy to GitHub Pages
+    name: ${{ needs.source.outputs.label }} | Publish Website
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: validate
+    needs: [source, validate]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
