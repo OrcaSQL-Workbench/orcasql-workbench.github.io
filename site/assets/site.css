@@ -156,6 +156,7 @@ a:hover .arrow { transform: translateX(3px); }
 .docs-navigation-grouped nav ul ul { margin-left: 12px; padding-left: 8px; border-left: 1px solid var(--line); }
 .docs-navigation-grouped a:focus-visible { outline-offset: -3px; }
 .docs-article { min-width: 0; max-width: 78ch; padding: 34px 38px; background: var(--theme-surface, #fff); border: 1px solid var(--line); border-radius: 11px; line-height: 1.85; overflow-wrap: anywhere; }
+.docs-main-wide .docs-article { max-width: none; }
 .docs-article h1 { font-size: 34px; font-weight: 650; margin-bottom: 23px; color: var(--theme-heading, #17394e); }
 .docs-article h2 { margin-top: 37px; margin-bottom: 13px; font-size: 23px; color: var(--theme-heading, #213f55); }
 .docs-article h3 { margin-top: 27px; margin-bottom: 10px; font-size: 18px; }

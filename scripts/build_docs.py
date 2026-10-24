@@ -362,6 +362,7 @@ def site_page(documentation, page):
             groups.append(links)
     navigation = "<ul>" + "\n".join(groups) + "</ul>"
     navigation_class = "docs-navigation" + (" docs-navigation-grouped" if any(documentation.navigation) else "")
+    main_class = "docs-main" + (" docs-main-wide" if manual == MANUALS["arkdb"] else "")
     body = documentation.html(page)
     source_url = REPOSITORY_URL + "/blob/main/" + manual.source_path + "/" + quote(page.source, safe="")
     wiki_url = manual.wiki_url + "/" + page.wiki_route
@@ -397,7 +398,7 @@ def site_page(documentation, page):
     </nav>
     <a class="repo-link" href="{manual.repository_url}" target="_blank" rel="noopener noreferrer">GitHub</a>
   </header>
-  <main class="docs-main wrap" id="main" tabindex="-1">
+  <main class="{main_class} wrap" id="main" tabindex="-1">
     <details class="{navigation_class}" open>
       <summary>{escape(manual.title)}</summary>
       <nav aria-label="{escape(manual.title, quote=True)}目录">{navigation}</nav>
