@@ -60,10 +60,18 @@ class SiteThemeTests(unittest.TestCase):
         self.assertTrue(any("head script" in error for error in errors))
 
     def test_script_must_be_a_direct_head_child_not_an_inert_nested_script(self):
-        for wrapper in ("template", "noscript", "title"):
-            with self.subTest(wrapper=wrapper):
-                errors = script_errors(self.parse(html(script=f"<{wrapper}>{SCRIPT}</{wrapper}>")))
-                self.assertTrue(any("head script" in error for error in errors))
+        modes = {
+            "native": Page.CDATA_CONTENT_ELEMENTS,
+            "title-as-text": (*Page.CDATA_CONTENT_ELEMENTS, "title"),
+        }
+        for mode, elements in modes.items():
+            with self.subTest(parser=mode), patch.object(Page, "CDATA_CONTENT_ELEMENTS", elements):
+                self.assertEqual(script_errors(self.parse(html())), [])
+                for wrapper in ("template", "noscript", "title"):
+                    with self.subTest(wrapper=wrapper):
+                        page = self.parse(html(script=f"<{wrapper}>{SCRIPT}</{wrapper}>"))
+                        self.assertFalse(any(script["head"] for script in page.scripts))
+                        self.assertTrue(script_errors(page))
 
     def test_base_element_cannot_redirect_the_approved_root_relative_script(self):
         content = html().replace("<title>", '<base href="https://example.com/"><title>', 1)
