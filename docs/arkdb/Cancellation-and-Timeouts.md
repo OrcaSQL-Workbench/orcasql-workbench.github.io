@@ -6,7 +6,7 @@
 
 优先使用连接的 `features.cancellation`。MySQL 实现会为它管理独立控制连接及清理，不需要应用另外传入控制连接。
 
-下面用有限时长的只读 `SLEEP(10)` 演示。查询一开始就绑定拒绝处理，取消后仍等待原查询；查询错误和控制错误分别保留。
+下面用有限时长的只读 `SLEEP(10)` 演示。查询一开始就绑定拒绝处理，取消后仍等待原查询；查询错误和控制错误分别保留。保存为 `src\main\ets\sample\CancellationExample.ets`。
 
 ```typescript
 import { ArkDbError, ConnectionState, DbConnection } from '@arkdb/mysql';
@@ -52,6 +52,26 @@ export async function demonstrateCancellation(queryConnection: DbConnection): Pr
 ```
 
 查询先正常完成也是合法结果，不能要求每次取消都产生中断错误。控制账号需要具备取消目标查询的权限，控制命令与目标查询必须在同一服务器上。
+
+### 从 Worker 调用
+
+准备[连接示例中的公共模块](Connections.md#定义连接信息并调用)，再在同一个 `CancellationExample.ets` 中添加：
+
+[//]: # (arkdb-example: cancellation-call)
+```typescript
+import { ConnectionConfig } from '@arkdb/mysql';
+import { withConnection } from './ConnectionExample';
+
+export async function runCancellationExample(config: ConnectionConfig, password: string): Promise<string> {
+  let outcome: string = '';
+  await withConnection(config, password, async (connection: DbConnection): Promise<void> => {
+    outcome = await demonstrateCancellation(connection);
+  });
+  return outcome;
+}
+```
+
+Worker 将实际配置和本次密码传给 `runCancellationExample()`。可能正常返回 `interrupted`，也可能返回 `completed before cancellation took effect`；不要为追求固定输出而把正常完成改成取消成功。控制、查询或关闭失败时抛错，按失败响应处理。
 
 ## 取消结果与连接复用
 

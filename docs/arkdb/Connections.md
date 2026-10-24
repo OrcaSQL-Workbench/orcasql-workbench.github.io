@@ -10,6 +10,107 @@ MySQL 1.0.2 通过 `ConnectionConfig` 配置连接，密码另行传给 `MySqlDr
 
 完整的字段类型、默认值和限制见[配置参考](Configuration-Reference.md#connectionconfig)。密码、连接分组和界面状态不属于连接配置。`clone()` 会复制配置，并隔离嵌套的 TLS 设置。
 
+## 定义连接信息并调用
+
+ArkDB 使用配置对象，不是拼接连接字符串。先完成 [HAR 安装](Getting-Started.md#加入应用模块)，再将下面三个代码块依次放在 `src\main\ets\sample\ConnectionExample.ets` 中。连接操作由应用自己的 Worker 调用，注册方式见 [Worker 集成](Worker-Integration.md)。
+
+这里明确列出连接信息的定义位置。替换 `host`、`port`、`database`、`user` 为实际测试环境信息；示例域名不是可用服务器，数据库必须已存在并允许该账号访问。
+
+[//]: # (arkdb-example: connection-config)
+```typescript
+import { ConnectionConfig, DbConnection, MySqlDriverFactory, SslMode } from '@arkdb/mysql';
+
+export function createExampleConfig(): ConnectionConfig {
+  const host: string = 'mysql.example.com';
+  const port: number = 3306;
+  const database: string = 'arkdb_demo';
+  const user: string = 'arkdb_demo_user';
+  const caPemPath: string = '';
+
+  const config = new ConnectionConfig();
+  config.host = host;
+  config.port = port;
+  config.defaultSchema = database;
+  config.user = user;
+  config.autocommit = true;
+  config.ssl.mode = SslMode.VERIFY_IDENTITY;
+  if (caPemPath.length > 0) config.ssl.caCertPath = caPemPath;
+  return config;
+}
+```
+
+| 变量 | 应填写什么 |
+| --- | --- |
+| `host` | MySQL DNS 名称，必须与服务器证书匹配 |
+| `port` | MySQL 监听端口，通常为 `3306` |
+| `database` | 已存在且已授权的测试数据库名，对应 `defaultSchema` |
+| `user` | 实际测试账号 |
+| `caPemPath` | 应用可读的 CA PEM 路径；留空表示使用平台信任策略，不是关闭证书验证 |
+| `passwordFromUi` | 下方调用函数接收的本次密码，由应用输入并传给 Worker，不写入源码或日志 |
+
+### 连接和关闭的共同处理
+
+下面的 `withConnection()` 负责校验、连接、执行回调和关闭。回调只借用连接，不能将它保存到函数外继续使用。后续查询、流式读取和元数据示例复用这段生命周期代码，不各自复制清理逻辑。
+
+[//]: # (arkdb-example: connection-lifecycle)
+```typescript
+export class ConnectionExampleFailure extends Error {
+  primaryFailure: Object | null;
+  cleanupFailure: Object | null;
+
+  constructor(primary: Object | null, cleanup: Object | null) {
+    super('Connection operation or cleanup failed; inspect retained failures without logging secrets.');
+    this.primaryFailure = primary;
+    this.cleanupFailure = cleanup;
+  }
+}
+
+export async function withConnection(config: ConnectionConfig, password: string,
+  operation: (connection: DbConnection) => Promise<void>): Promise<void> {
+  const issues = config.validate();
+  if (issues.length > 0) throw issues[0];
+  const connection = new MySqlDriverFactory().createConnection(config, password);
+  let primary: Object | null = null;
+  let cleanup: Object | null = null;
+  try {
+    await connection.connect();
+    await operation(connection);
+  } catch (error) {
+    primary = error as Object;
+  } finally {
+    try {
+      await connection.close();
+    } catch (error) {
+      cleanup = error as Object;
+    }
+  }
+  if (primary !== null || cleanup !== null) {
+    throw new ConnectionExampleFailure(primary, cleanup);
+  }
+}
+```
+
+### 检查连接的调用示例
+
+[//]: # (arkdb-example: connection-call)
+```typescript
+export async function checkConnection(config: ConnectionConfig, password: string): Promise<void> {
+  await withConnection(config, password, async (connection: DbConnection): Promise<void> => {
+    await connection.ping();
+  });
+}
+
+export async function runConnectionExample(passwordFromUi: string): Promise<void> {
+  const config = createExampleConfig();
+  const password: string = passwordFromUi;
+  await checkConnection(config, password);
+}
+```
+
+Worker 收到本次密码后调用 `runConnectionExample()`，不要直接从 ArkUI 事件执行数据库操作。需要从表单取得全部连接信息时，由 Worker 构造同样的 `ConnectionConfig`，再调用 `checkConnection(config, password)`；可直接参考 [Worker 请求与响应代码](Worker-Integration.md#连接检查的请求与响应示例)。
+
+Promise 正常完成表示连接、ping 和关闭均成功，不修改数据库。配置错误直接抛出；连接、操作和关闭失败时分别保留错误，安全展示见[错误与日志](Errors-and-Logging.md#展示连接与清理错误)。
+
 ## 明确选择 TLS 模式
 
 新接入建议显式选择 `SslMode.VERIFY_IDENTITY`，使用与服务器证书匹配的 DNS 名称。它同时验证证书链和主机名。

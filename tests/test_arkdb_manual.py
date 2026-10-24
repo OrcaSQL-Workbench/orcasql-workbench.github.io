@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import re
 import sys
 import tempfile
 import unittest
@@ -13,6 +14,29 @@ from validate_site import Page
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
+AUTHORED_EXAMPLES = {
+    "connection-config": "Connections.md",
+    "connection-lifecycle": "Connections.md",
+    "connection-call": "Connections.md",
+    "crud-create": "Queries.md",
+    "crud-insert": "Queries.md",
+    "crud-read": "Queries.md",
+    "crud-update": "Queries.md",
+    "crud-delete": "Queries.md",
+    "crud-call": "Queries.md",
+    "streaming-call": "Streaming.md",
+    "transaction-call": "Transactions.md",
+    "cancellation-call": "Cancellation-and-Timeouts.md",
+    "metadata-columns": "Metadata-and-Metrics.md",
+    "metrics-availability": "Metadata-and-Metrics.md",
+    "values-read": "Data-Types-and-Results.md",
+    "error-cleanup": "Errors-and-Logging.md",
+    "logging-level": "Errors-and-Logging.md",
+    "worker-messages": "Worker-Integration.md",
+    "worker-host": "Worker-Integration.md",
+    "worker-entry": "Worker-Integration.md",
+}
+
 
 class ArkDbManualTests(unittest.TestCase):
     def setUp(self):
@@ -23,14 +47,63 @@ class ArkDbManualTests(unittest.TestCase):
         baseline = json.loads((FIXTURES / "arkdb-mysql-1.0.2-examples.json").read_text(encoding="utf-8"))
         examples = baseline["examples"]
         found = set()
+        authored = {}
         for page in self.documentation.pages:
             _, tokens, _ = self.documentation.parsed(page)
+            lines = page.content.splitlines()
             for token in tokens:
-                if token.type == "fence" and token.info == "typescript":
+                if token.type != "fence" or token.info != "typescript":
+                    continue
+                previous = lines[token.map[0] - 1] if token.map[0] else ""
+                marker = re.fullmatch(r"\[//\]: # \(arkdb-example: ([a-z-]+)\)", previous)
+                if marker:
+                    identifier = marker[1]
+                    self.assertIn(identifier, AUTHORED_EXAMPLES, f"Unknown manual example: {identifier}")
+                    self.assertNotIn(identifier, authored, f"Duplicate manual example: {identifier}")
+                    self.assertEqual(page.source, AUTHORED_EXAMPLES[identifier])
+                    authored[identifier] = token.content
+                else:
                     names = [name for name, source in examples.items() if source == token.content]
-                    self.assertTrue(names, f"{page.source}: ArkTS example differs from the released guide")
+                    self.assertTrue(names, f"{page.source}: unmarked ArkTS example differs from the released guide")
                     found.update(names)
         self.assertEqual(found, set(examples), "A released usage example is missing from the manual")
+        self.assertEqual(set(authored), set(AUTHORED_EXAMPLES), "A topic-specific example is missing")
+
+    def test_example_markers_are_hidden_in_site_and_wiki(self):
+        for page in self.documentation.pages:
+            html = self.documentation.html(page)
+            self.assertNotIn("arkdb-example:", html)
+            renderer, _, _ = self.documentation.parsed(page)
+            wiki_html = renderer.render(self.documentation.wiki_markdown(page))
+            self.assertNotIn("arkdb-example:", wiki_html)
+
+    def test_connection_inputs_and_crud_sequence_are_explicit(self):
+        connection = self.documentation.source.joinpath("Connections.md").read_text(encoding="utf-8")
+        for setting in ("host", "port", "database", "user", "caPemPath"):
+            self.assertRegex(connection, rf"const {setting}: (?:string|number) = ")
+        for mapping in ("config.host = host", "config.port = port", "config.defaultSchema = database",
+                        "config.user = user", "password: string = passwordFromUi"):
+            self.assertIn(mapping, connection)
+        self.assertIn("SslMode.VERIFY_IDENTITY", connection)
+        self.assertIn("await connection.close()", connection)
+        self.assertIn("this.primaryFailure = primary", connection)
+        self.assertIn("this.cleanupFailure = cleanup", connection)
+
+        queries = self.documentation.source.joinpath("Queries.md").read_text(encoding="utf-8")
+        _, tokens, _ = self.documentation.parsed(self.documentation.by_source["Queries.md"])
+        call = next(token.content for token in tokens if token.type == "fence" and
+                    "export async function runCrudExample(" in token.content)
+        operations = re.findall(r"await (createSampleTable|insertSampleRows|readSampleRows|"
+                                r"updateSampleRow|deleteSampleRow)\(connection\)", call)
+        self.assertEqual(operations, ["createSampleTable", "insertSampleRows", "readSampleRows",
+                                     "updateSampleRow", "readSampleRows", "deleteSampleRow",
+                                     "readSampleRows"])
+        self.assertIn("CREATE TEMPORARY TABLE arkdb_sample_inventory", queries)
+        self.assertNotIn("DROP TABLE", queries)
+        self.assertIn("CREATE TEMPORARY TABLES", queries)
+        self.assertIn("result.truncated", queries)
+        self.assertIn("1 | banana | 200", queries)
+        self.assertIn("不是实机运行记录", queries)
 
     def test_old_page_routes_titles_and_heading_links_remain_available(self):
         legacy = json.loads((FIXTURES / "arkdb-legacy-routes.json").read_text(encoding="utf-8"))
