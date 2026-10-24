@@ -20,7 +20,7 @@
 
 ## 支持范围
 
-MySQL 已实现文本协议查询、认证、TCP/TLS、有界结果、事务、元数据、取消原语和服务器指标。MariaDB 仍为实验性支持，服务器指标不支持 MariaDB。
+MySQL 已实现文本协议查询、认证、TCP/TLS、有界结果、事务、元数据、取消原语和服务器指标。
 
 目前没有 PostgreSQL 驱动、预处理语句、参数绑定、连接池或自动管理的 Worker。`ServerFamily.PostgreSQL` 只是保留枚举值；共享 core 是源码组织，不是第二个需要安装的包。
 

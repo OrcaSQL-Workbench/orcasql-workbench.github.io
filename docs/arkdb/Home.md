@@ -8,11 +8,10 @@ ArkDB 是供 HarmonyOS 应用使用的原生 ArkTS 数据库驱动。把驱动 H
 
 | 项目 | 说明 |
 | --- | --- |
-| 驱动 | `@arkdb/mysql`，一个包含共享核心代码的 HAR，不需要另外安装 core |
+| 驱动 | `@arkdb/mysql`，一个包含共享核心代码的 HAR |
 | 目标平台 | HarmonyOS 6.1.1 / API 24，tablet 和 2in1 |
 | 下载 | [MySQL 1.0.2 Release](https://github.com/OrcaSQL-Workbench/ArkDB/releases/tag/mysql-v1.0.2) |
 | MySQL | 文本协议查询、TLS、流式结果、事务、元数据、取消和服务器指标 |
-| MariaDB | 实验性支持；不支持 MariaDB 服务器指标 |
 
 当前没有 PostgreSQL 驱动、参数绑定、预处理语句、连接池或自动管理的 Worker。工程预览也不代表已经通过目标设备与服务器的兼容性验收，详见[兼容性与升级](Compatibility-and-Upgrading.md)。
 
