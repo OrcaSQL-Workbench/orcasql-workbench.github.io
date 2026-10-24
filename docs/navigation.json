@@ -1,12 +1,12 @@
 {
-  "version": 1,
+  "version": 2,
   "pages": [
-    { "source": "Home.md", "slug": "", "title": "用户文档" },
-    { "source": "Getting-Started.md", "slug": "getting-started", "title": "入门指南" },
-    { "source": "Connections.md", "slug": "connections", "title": "连接管理与 TLS" },
-    { "source": "SQL-Editor.md", "slug": "sql-editor", "title": "SQL 编辑与执行" },
-    { "source": "Results-and-Export.md", "slug": "results-and-export", "title": "结果查看与导出" },
-    { "source": "History-and-Files.md", "slug": "history-and-files", "title": "SQL 历史与文件" },
-    { "source": "FAQ.md", "slug": "faq", "title": "常见问题" }
+    { "source": "Home.md", "slug": "", "title": "用户文档", "section": "开始使用" },
+    { "source": "Getting-Started.md", "slug": "getting-started", "title": "入门指南", "section": "开始使用" },
+    { "source": "Connections.md", "slug": "connections", "title": "连接管理与 TLS", "section": "MySQL 使用指南" },
+    { "source": "SQL-Editor.md", "slug": "sql-editor", "title": "SQL 编辑与执行", "section": "MySQL 使用指南" },
+    { "source": "Results-and-Export.md", "slug": "results-and-export", "title": "结果查看与导出", "section": "MySQL 使用指南" },
+    { "source": "History-and-Files.md", "slug": "history-and-files", "title": "SQL 历史与文件", "section": "MySQL 使用指南" },
+    { "source": "FAQ.md", "slug": "faq", "title": "常见问题", "section": "故障排查" }
   ]
 }
