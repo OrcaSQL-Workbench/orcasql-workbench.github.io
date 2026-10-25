@@ -11,9 +11,9 @@ from validate_site import Page, script_errors, validate
 
 
 SCRIPT = '<script src="/assets/theme.js"></script>'
-CONTROL = """<div data-theme-settings hidden><label>Theme<select data-theme-control>
-<option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option>
-</select></label><span data-theme-status role="status" hidden>Not saved.</span></div>"""
+CONTROL = """<div data-theme-settings hidden>
+<button type="button" data-theme-control value="system" aria-label="Theme: system; switch to light"></button>
+<span data-theme-status role="status" hidden>Not saved.</span></div>"""
 
 
 def html(script=SCRIPT, control=CONTROL, body=""):
@@ -35,7 +35,7 @@ class SiteThemeTests(unittest.TestCase):
         path.write_text(content, encoding="utf-8")
         return Page(path)
 
-    def test_one_local_head_script_and_hidden_three_state_control_are_allowed(self):
+    def test_one_local_head_script_and_hidden_theme_button_are_allowed(self):
         self.assertEqual(script_errors(self.parse(html())), [])
 
     def test_other_scripts_inline_code_duplicate_attributes_and_extra_permissions_are_rejected(self):
@@ -84,9 +84,18 @@ class SiteThemeTests(unittest.TestCase):
 
     def test_missing_visible_duplicate_or_invalid_theme_controls_are_rejected(self):
         for control in ("", CONTROL.replace(" hidden", "", 1), CONTROL + CONTROL,
-                        CONTROL.replace('value="dark"', 'value="other"')):
+                        CONTROL.replace('value="system"', 'value="other"'),
+                        CONTROL.replace('type="button"', 'type="submit"'),
+                        CONTROL.replace('aria-label="Theme: system; switch to light"', ""),
+                        f"<nav>{CONTROL}</nav>"):
             with self.subTest(control=control):
                 self.assertTrue(script_errors(self.parse(html(control=control))))
+
+    def test_portal_theme_button_is_immediately_before_github_and_outside_navigation(self):
+        content = (PROJECT / "site" / "index.html").read_text(encoding="utf-8")
+        self.assertEqual(script_errors(self.parse(content)), [])
+        self.assertLess(content.index("</nav>"), content.index("data-theme-control"))
+        self.assertLess(content.index("data-theme-control"), content.index('class="repo-link"'))
 
     def test_archives_must_have_neither_scripts_nor_theme_controls(self):
         self.assertEqual(script_errors(self.parse(html(script="", control="")), archived=True), [])

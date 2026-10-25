@@ -1,31 +1,56 @@
 [hidden] { display: none !important; }
 
 .theme-settings {
+  position: relative;
   display: inline-flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 4px 12px;
-  min-width: 0;
-  max-width: 100%;
+  flex: 0 0 auto;
   color: var(--theme-muted, #586b7b);
   font-size: 13px;
 }
-.theme-settings label { display: inline-flex; align-items: center; gap: 8px; }
-.theme-settings select {
-  min-height: 44px;
-  max-width: 100%;
-  padding: 6px 10px;
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border: 1px solid var(--theme-control-border, #cdd8e3);
-  border-radius: 6px;
+  border-radius: 50%;
   font: inherit;
   color: var(--theme-text, #253c4e);
   background: var(--theme-surface, #fff);
+  cursor: pointer;
+  transition: background-color 160ms ease-out, border-color 160ms ease-out;
 }
-.theme-settings select:focus-visible {
+.theme-toggle:hover {
+  background: var(--theme-hover, #eef3f9);
+  border-color: var(--theme-muted, #586b7b);
+}
+.theme-toggle:active { background: var(--theme-panel, #eaf0fa); }
+.theme-toggle:focus-visible {
   outline: 3px solid var(--theme-focus, #b77900);
   outline-offset: 3px;
 }
-.theme-status { flex-basis: 100%; max-width: 25em; font-size: 12px; }
+.theme-toggle svg { display: none; width: 20px; height: 20px; }
+.theme-toggle[value="system"] .theme-icon-system,
+.theme-toggle[value="light"] .theme-icon-light,
+.theme-toggle[value="dark"] .theme-icon-dark { display: block; }
+.theme-status {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(25em, calc(100vw - 40px));
+  padding: 10px 12px;
+  border: 1px solid var(--theme-control-border, #cdd8e3);
+  border-radius: 6px;
+  color: var(--theme-text, #253c4e);
+  background: var(--theme-surface, #fff);
+  font-size: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle { transition: none; }
+}
 
 /* Shared overrides preserve each stylesheet's original light defaults. */
 @media screen and (prefers-color-scheme: dark) {

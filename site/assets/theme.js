@@ -3,6 +3,8 @@
 
   const key = "orcasql-workbench.theme";
   const modes = new Set(["system", "light", "dark"]);
+  const labels = { system: "跟随系统", light: "浅色", dark: "深色" };
+  const nextModes = { system: "light", light: "dark", dark: "system" };
   let storage;
   let currentMode;
 
@@ -35,6 +37,9 @@
     }
     for (const control of document.querySelectorAll("[data-theme-control]")) {
       control.value = mode;
+      const label = `主题：${labels[mode]}；切换为${labels[nextModes[mode]]}`;
+      control.setAttribute("aria-label", label);
+      control.setAttribute("title", label);
     }
   }
 
@@ -45,15 +50,10 @@
   }
 
   function initialize() {
+    applyMode(currentMode);
     for (const control of document.querySelectorAll("[data-theme-control]")) {
-      control.value = currentMode;
-      control.addEventListener("change", function () {
-        const mode = control.value;
-        if (!modes.has(mode)) {
-          console.warn("Ignoring an unsupported site theme selection.");
-          control.value = currentMode;
-          return;
-        }
+      control.addEventListener("click", function () {
+        const mode = nextModes[currentMode];
         applyMode(mode);
         try {
           storage = window.localStorage;

@@ -78,6 +78,7 @@ a:hover .arrow { transform: translateX(3px); }
 .portal-header { min-height: 86px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; }
 .portal-header nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; min-width: 0; font-size: 14px; }
 .portal-header nav a { min-height: 44px; display: inline-flex; align-items: center; }
+.header-tools { display: flex; align-items: center; gap: 16px; margin-left: auto; }
 .repo-link { display: inline-flex; gap: 8px; align-items: center; color: var(--theme-muted, #425669); font-size: 14px; min-height: 44px; }
 .portal-main { padding-top: 49px; padding-bottom: 48px; }
 .portal-intro { display: grid; grid-template-columns: 1.25fr 0.85fr; gap: 74px; align-items: center; }

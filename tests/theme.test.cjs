@@ -15,8 +15,11 @@ function boot(options = {}) {
   const documentEvents = new Map();
   const windowEvents = new Map();
   const controlEvents = new Map();
+  const attributes = new Map();
   const control = {
     value: "system",
+    setAttribute: (name, value) => attributes.set(name, value),
+    getAttribute: name => attributes.get(name),
     addEventListener: (name, callback) => controlEvents.set(name, callback),
   };
   const settings = { hidden: true };
@@ -72,8 +75,14 @@ function boot(options = {}) {
       documentEvents.get("DOMContentLoaded")();
     },
     choose(mode) {
-      control.value = mode;
-      controlEvents.get("change")();
+      assert.ok(["system", "light", "dark"].includes(mode));
+      for (let step = 0; control.value !== mode && step < 3; step++) {
+        controlEvents.get("click")();
+      }
+      assert.equal(control.value, mode);
+    },
+    click() {
+      controlEvents.get("click")();
     },
     storageEvent(event) {
       windowEvents.get("storage")(event);
@@ -148,7 +157,7 @@ test("blocked storage access keeps controls usable and reports an unsaved choice
   state.choose("dark");
   assert.equal(state.root.get("data-theme"), "dark");
   assert.equal(state.status.hidden, false);
-  assert.equal(state.warnings.length, 2);
+  assert.equal(state.warnings.length, 3);
 });
 
 test("a failed read falls back to system and a later choice can still be saved", () => {
@@ -206,14 +215,19 @@ test("unrelated keys and sessionStorage events do not change the theme", () => {
   assert.equal(state.control.value, "dark");
 });
 
-test("an invalid selection is rejected rather than persisted", () => {
-  const state = boot({ values: new Map([[key, "light"]]) });
-  state.choose("invalid");
-  assert.equal(state.root.get("data-theme"), "light");
-  assert.equal(state.control.value, "light");
-  assert.equal(state.values.get(key), "light");
-  assert.equal(state.warnings.length, 1);
-  assert.deepEqual(state.writes, []);
+test("the icon button cycles all modes and labels the current state and next action", () => {
+  const state = boot();
+  for (const [mode, label, nextLabel] of [
+    ["system", "跟随系统", "浅色"],
+    ["light", "浅色", "深色"],
+    ["dark", "深色", "跟随系统"],
+    ["system", "跟随系统", "浅色"],
+  ]) {
+    assert.equal(state.control.value, mode);
+    assert.equal(state.control.getAttribute("aria-label"), `主题：${label}；切换为${nextLabel}`);
+    assert.equal(state.control.getAttribute("title"), state.control.getAttribute("aria-label"));
+    state.click();
+  }
 });
 
 test("unexpected programming errors are not swallowed as storage failures", () => {
