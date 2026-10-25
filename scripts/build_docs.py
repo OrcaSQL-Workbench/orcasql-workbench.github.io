@@ -408,18 +408,18 @@ def site_page(documentation, page):
     <a class="brand" href="/"><img class="brand-mark" src="/assets/favicon.svg" alt=""><span class="brand-text">OrcaSQL <span>Workbench</span></span></a>
     <nav aria-label="主要导航">
       <a href="/">首页</a><a href="/docs/"{workbench_current}>用户文档</a><a href="/arkdb/"{arkdb_current}>ArkDB 开发手册</a><a href="/privacy/">隐私政策</a>
+    </nav>
+    <div class="header-tools">
       <div class="theme-settings" data-theme-settings hidden>
-        <label>主题
-          <select data-theme-control>
-            <option value="system">跟随系统</option>
-            <option value="light">浅色</option>
-            <option value="dark">深色</option>
-          </select>
-        </label>
+        <button class="theme-toggle" type="button" data-theme-control value="system" aria-label="主题：跟随系统；切换为浅色" title="主题：跟随系统；切换为浅色">
+          <svg class="theme-icon-system" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+          <svg class="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>
+          <svg class="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z"/></svg>
+        </button>
         <span class="theme-status" data-theme-status role="status" hidden>当前页面已切换，但浏览器未能保存主题。</span>
       </div>
-    </nav>
-    <a class="repo-link" href="{manual.repository_url}" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a class="repo-link" href="{manual.repository_url}" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </div>
   </header>
   <main class="{main_class} wrap" id="main" tabindex="-1">
     <details class="{navigation_class}" open>

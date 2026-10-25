@@ -31,8 +31,7 @@ class Page(HTMLParser):
         self.event_handlers = []
         self.theme_controls = 0
         self.theme_settings = []
-        self.theme_options = []
-        self.in_theme_control = False
+        self.theme_buttons = []
         self.feed(path.read_text(encoding="utf-8"))
         self.close()
 
@@ -64,11 +63,13 @@ class Page(HTMLParser):
         self.event_handlers.extend(name for name in attrs if name.startswith("on"))
         if "data-theme-settings" in attrs:
             self.theme_settings.append("hidden" in attrs)
-        if tag == "select" and "data-theme-control" in attrs:
+        if "data-theme-control" in attrs:
             self.theme_controls += 1
-            self.in_theme_control = True
-        if tag == "option" and self.in_theme_control:
-            self.theme_options.append(attrs.get("value"))
+            self.theme_buttons.append(
+                tag == "button" and attrs.get("type") == "button"
+                and attrs.get("value") == "system" and bool(attrs.get("aria-label"))
+                and "nav" not in self.parents
+            )
         for attribute in ("href", "src"):
             if attrs.get(attribute):
                 self.references.append(attrs[attribute])
@@ -80,8 +81,6 @@ class Page(HTMLParser):
             self.in_title = False
         if tag == "script":
             self.active_script = None
-        if tag == "select":
-            self.in_theme_control = False
         for index in range(len(self.parents) - 1, -1, -1):
             if self.parents[index] == tag:
                 del self.parents[index:]
@@ -117,8 +116,8 @@ def script_errors(page, *, archived=False):
                 or not script["head"] or script["self_closing"]):
             failures.append("only an empty head script with src=\"/assets/theme.js\" is allowed")
     if (page.theme_controls != 1 or page.theme_settings != [True]
-            or page.theme_options != ["system", "light", "dark"]):
-        failures.append("expected one initially hidden system/light/dark theme selector")
+            or page.theme_buttons != [True]):
+        failures.append("expected one initially hidden labelled theme button outside navigation")
     return failures
 
 
