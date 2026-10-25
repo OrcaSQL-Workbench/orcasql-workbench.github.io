@@ -179,6 +179,7 @@ class ArkDbManualTests(unittest.TestCase):
         namespace = {"svg": "http://www.w3.org/2000/svg"}
         self.assertEqual(svg.tag, "{http://www.w3.org/2000/svg}svg")
         self.assertEqual(svg.get("role"), "img")
+        self.assertEqual(svg.get("focusable"), "false")
         title = svg.find("svg:title", namespace)
         description = svg.find("svg:desc", namespace)
         self.assertIsNotNone(title)
@@ -191,6 +192,11 @@ class ArkDbManualTests(unittest.TestCase):
         for element in svg.iter():
             self.assertNotIn(element.tag.rsplit("}", 1)[-1],
                              ("script", "foreignObject", "iframe", "animate", "animateTransform"))
+            self.assertIn(element.get("role"), (None, "img", "presentation", "none"))
+            self.assertNotEqual(element.get("focusable"), "true")
+            for attribute in ("tabindex", "accesskey", "aria-pressed", "aria-expanded",
+                              "aria-controls", "aria-haspopup", "aria-keyshortcuts"):
+                self.assertNotIn(attribute, element.attrib)
             for attribute, value in element.attrib.items():
                 self.assertFalse(attribute.lower().startswith("on"))
                 if attribute.rsplit("}", 1)[-1] == "href":
@@ -226,6 +232,73 @@ class ArkDbManualTests(unittest.TestCase):
             self.assertIn("](" + asset + ")", wiki)
             for surface in ("site", "wiki"):
                 self.assertEqual((root / surface / asset).read_bytes(), source)
+
+    def test_architecture_svg_labels_meet_aa_contrast_in_each_theme(self):
+        svg = ET.fromstring(self.manual.source.joinpath(
+            "assets/arkdb-architecture.svg").read_bytes())
+        namespace = {"svg": "http://www.w3.org/2000/svg"}
+        css = "\n".join(element.text or "" for element in svg.findall("svg:style", namespace))
+        fills = dict(re.findall(r"(?m)^\.([\w-]+) \{ fill: ([^;]+);", css))
+        parents = {child: parent for parent in svg.iter() for child in parent}
+        themes = {
+            "automatic-dark": r"(?m)^:root, svg \{([^{}]+)\}",
+            "automatic-light": r"(?m)^@media \(prefers-color-scheme: light\) \{ :root, svg \{([^{}]+)\}",
+            "explicit-dark": r'(?m)^svg\[data-theme="dark"\] \{([^{}]+)\}',
+            "explicit-light": r'(?m)^svg\[data-theme="light"\] \{([^{}]+)\}',
+        }
+
+        def color(value, palette):
+            if value.startswith("var("):
+                value = palette[value[4:-1]]
+            if re.fullmatch(r"#[a-fA-F0-9]{6}", value):
+                return tuple(int(value[index:index + 2], 16) / 255 for index in (1, 3, 5)) + (1,)
+            match = re.fullmatch(r"rgba\((\d+), (\d+), (\d+), ([\d.]+)\)", value)
+            self.assertIsNotNone(match, f"Unsupported SVG contrast color: {value}")
+            return tuple(int(match[index]) / 255 for index in (1, 2, 3)) + (float(match[4]),)
+
+        def composite(foreground, background):
+            return tuple(foreground[index] * foreground[3] +
+                         background[index] * (1 - foreground[3]) for index in range(3))
+
+        def luminance(rgb):
+            linear = [channel / 12.92 if channel <= 0.04045
+                      else ((channel + 0.055) / 1.055) ** 2.4 for channel in rgb]
+            return sum(channel * weight for channel, weight in
+                       zip(linear, (0.2126, 0.7152, 0.0722)))
+
+        def fill(element, palette):
+            values = [fills[name] for name in element.get("class", "").split() if name in fills]
+            self.assertEqual(len(values), 1, f"Expected one SVG fill for {element.attrib}")
+            return color(values[0], palette)
+
+        for theme, pattern in themes.items():
+            with self.subTest(theme=theme):
+                match = re.search(pattern, css)
+                self.assertIsNotNone(match, f"Missing SVG palette: {theme}")
+                palette = dict(re.findall(r"(--[\w-]+): ([^;]+);", match[1]))
+                failures = []
+                labels = svg.findall(".//svg:text", namespace)
+                self.assertTrue(labels)
+                for text in labels:
+                    parent = parents[text]
+                    self.assertNotIn("transform", parent.attrib)
+                    background = color(palette["--bg"], palette)[:3]
+                    x, y = float(text.get("x")), float(text.get("y"))
+                    for sibling in parent:
+                        if sibling is text:
+                            break
+                        if sibling.tag == "{http://www.w3.org/2000/svg}rect":
+                            left, top = float(sibling.get("x")), float(sibling.get("y"))
+                            right = left + float(sibling.get("width"))
+                            bottom = top + float(sibling.get("height"))
+                            if left <= x <= right and top <= y <= bottom:
+                                background = composite(fill(sibling, palette), background)
+                    foreground = composite(fill(text, palette), background)
+                    light, dark = sorted((luminance(foreground), luminance(background)), reverse=True)
+                    ratio = (light + 0.05) / (dark + 0.05)
+                    if ratio < 4.5:
+                        failures.append(f"{text.text}: {ratio:.2f}:1")
+                self.assertEqual(failures, [], f"SVG labels below WCAG AA 4.5:1 in {theme}")
 
 
 if __name__ == "__main__":
