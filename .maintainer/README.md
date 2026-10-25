@@ -33,6 +33,10 @@ ArkDB 手册使用同样的文件和导航规则，图片放在 `docs\arkdb\asse
 
 ArkDB 的接口与支持边界应对照上游公共 `mysql\Index.ets`、包指南和实际 Release 更新。下载示例可固定到真实发布的版本，但不要把工程预览写成生产认证，或把尚未实现的驱动、参数绑定、连接池和托管 Worker 写成可用功能。
 
+`docs\arkdb\Architecture.md` 与 `docs\arkdb\assets\arkdb-architecture.svg` 共同维护实现导读。图中的源码职责与调用关系要对照同一个 ArkDB 提交；更新时同步正文中的固定提交链接和 SVG 的来源元数据。图使用自包含、无脚本的 SVG，由现有构建同时复制到网站和 Wiki，不为架构图增加浏览器运行时。
+
+静态图不保留 `tabindex`、按钮角色、交互状态 ARIA 或可点击的悬停提示，仍保留图和节点的描述。小字号标签与实际合成背景的对比度至少为 `4.5:1`，自动与显式浅深色都要满足；`test_arkdb_manual.py` 检查这些约束。
+
 当前手册以 MySQL 1.0.2 为准。`tests\fixtures\arkdb-mysql-1.0.2-examples.json` 保存从实际发布 HAR 提取的八个包指南示例，以及 HAR、包指南摘要和源码提交。`test_arkdb_manual.py` 比对手册中的 ArkTS 示例，并检查旧页面、章节链接和站内导航。更新示例时先核对对应发行包，不把仅存在于开发分支的接口写进已发布版本的用法。
 
 在现有主题页新增的手册自编示例，在代码块前一行使用 Markdown 隐藏引用注释 `[//]: # (arkdb-example: 标识)`，并登记到 `test_arkdb_manual.py` 的页面映射中；它们与上述发行包原文分别检查，不覆盖发行来源 fixture。不要改用 HTML 注释，当前渲染器禁用 HTML，会将其作为文字展示。连接设置、调用参数、共享模块文件名、前置步骤、连接所有权和预期结果必须明确。新增操作示例仍应使用对应已发布 HAR 的公共接口，不能将 Python 文档检查通过说成 ArkTS 编译或 HarmonyOS 实机验证通过。

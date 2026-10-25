@@ -16,6 +16,7 @@
     { "source": "Errors-and-Logging.md", "slug": "errors-and-logging", "title": "错误与日志", "section": "参考" },
     { "source": "Compatibility-and-Upgrading.md", "slug": "compatibility-and-upgrading", "title": "兼容性与升级", "section": "参考" },
     { "source": "Troubleshooting.md", "slug": "troubleshooting", "title": "故障排查与问题反馈", "section": "故障排查" },
+    { "source": "Architecture.md", "slug": "architecture", "title": "总览架构与源码导读", "section": "贡献与维护" },
     { "source": "Building-and-Releasing.md", "slug": "building-and-releasing", "title": "构建、示例与发行", "section": "贡献与维护" },
     { "source": "Transactions-and-Cancellation.md", "slug": "transactions-and-cancellation", "title": "事务、取消与超时", "section": "MySQL 使用指南", "nav": false }
   ]
