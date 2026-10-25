@@ -4,6 +4,8 @@ ArkDB 是供 HarmonyOS 应用使用的原生 ArkTS 数据库驱动。把驱动 H
 
 这份手册介绍 **MySQL 1.0.2 工程预览版**。第一次接入请从[下载与快速接入](Getting-Started.md)开始；已有应用需要安排线程和消息传递时，看 [Worker 集成](Worker-Integration.md)。
 
+想先理解驱动如何工作，可以从[总览架构与源码导读](Architecture.md)查看模块边界、查询链路和独立取消会话。
+
 ## 当前提供什么
 
 | 项目 | 说明 |
@@ -45,7 +47,8 @@ ArkDB 是供 HarmonyOS 应用使用的原生 ArkTS 数据库驱动。把驱动 H
 
 ### 贡献与维护
 
-需要自行编译驱动或维护发行时，再看[构建、示例与发行](Building-and-Releasing.md)。普通应用接入不需要这些步骤。
+- [总览架构与源码导读](Architecture.md)：理解共享核心、MySQL 实现、协议与传输分层，定位源码入口。
+- [构建、示例与发行](Building-and-Releasing.md)：自行编译驱动、运行源码示例或维护发行。普通应用接入不需要这些步骤。
 
 ## 接入前的边界
 

@@ -2,6 +2,8 @@
 
 这页给需要编译驱动、准备源码示例或维护发行的人。普通应用直接[安装发布的 HAR](Getting-Started.md)，不需要先克隆仓库或安装 npm 维护依赖。
 
+修改驱动前，先看[总览架构与源码导读](Architecture.md)，区分源码中的 `core` / `mysql` 分层、单 HAR 交付和宿主负责的 Worker。
+
 ## 本机工具链
 
 驱动源码的构建基线是 Node.js `>=22.19.0`、DevEco Studio 6.1.1.300 和 HarmonyOS API 24。仓库不下载或重新分发 SDK。

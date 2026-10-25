@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from urllib.parse import unquote, urlsplit
+import xml.etree.ElementTree as ET
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
@@ -128,6 +129,9 @@ class ArkDbManualTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             build_site(self.manual.source, root, manual=self.manual)
+            asset_urls = {
+                self.manual.site_path + path for path in self.documentation.assets()
+            }
             pages = {
                 page.site_url: Page(root / page.slug / "index.html")
                 for page in self.documentation.pages
@@ -140,6 +144,12 @@ class ArkDbManualTests(unittest.TestCase):
                         continue
                     target = unquote(url.path) or route
                     if not target.startswith("/arkdb/"):
+                        continue
+                    if target in asset_urls:
+                        self.assertTrue(
+                            (root / target.removeprefix(self.manual.site_path)).is_file(),
+                            f"{route}: missing asset {reference}",
+                        )
                         continue
                     self.assertIn(target, pages, f"{route}: missing target {reference}")
                     if url.fragment:
@@ -158,6 +168,64 @@ class ArkDbManualTests(unittest.TestCase):
                             if route != page.site_url),
                         f"Retained page has no incoming content link: {page.site_url}",
                     )
+
+    def test_architecture_svg_is_static_accessible_and_shared_by_site_and_wiki(self):
+        page = self.documentation.by_source["Architecture.md"]
+        self.assertTrue(page.in_navigation)
+        self.assertIn("(Architecture.md)", self.documentation.by_source["Home.md"].content)
+        asset = "assets/arkdb-architecture.svg"
+        source = self.manual.source.joinpath(asset).read_bytes()
+        svg = ET.fromstring(source)
+        namespace = {"svg": "http://www.w3.org/2000/svg"}
+        self.assertEqual(svg.tag, "{http://www.w3.org/2000/svg}svg")
+        self.assertEqual(svg.get("role"), "img")
+        title = svg.find("svg:title", namespace)
+        description = svg.find("svg:desc", namespace)
+        self.assertIsNotNone(title)
+        self.assertIsNotNone(description)
+        self.assertEqual(svg.get("aria-labelledby"),
+                         title.get("id") + " " + description.get("id"))
+        self.assertIn("MySqlConnection", description.text)
+        self.assertIn("KILL QUERY", description.text)
+        self.assertIn("prefers-color-scheme", source.decode("utf-8"))
+        for element in svg.iter():
+            self.assertNotIn(element.tag.rsplit("}", 1)[-1],
+                             ("script", "foreignObject", "iframe", "animate", "animateTransform"))
+            for attribute, value in element.attrib.items():
+                self.assertFalse(attribute.lower().startswith("on"))
+                if attribute.rsplit("}", 1)[-1] == "href":
+                    self.assertTrue(value.startswith("#"), "SVG references must remain local")
+            if element.tag.endswith("}style"):
+                for target in re.findall(r"url\(\s*['\"]?([^)'\"\s]+)", element.text or ""):
+                    self.assertTrue(target.startswith(("#", "data:")),
+                                    "SVG styles must not fetch external assets")
+
+        provenance = json.loads(svg.find("svg:metadata", namespace).text)
+        self.assertEqual(provenance["repository"], "https://github.com/OrcaSQL-Workbench/ArkDB")
+        self.assertRegex(provenance["revision"], r"^[a-f0-9]{40}$")
+        _, tokens, _ = self.documentation.parsed(page)
+        source_links = [
+            child.attrGet("href")
+            for token in tokens for child in token.children or []
+            if child.type == "link_open" and
+            child.attrGet("href").startswith(provenance["repository"] + "/blob/")
+        ]
+        self.assertTrue(source_links, "Architecture guide must link to source evidence")
+        for link in source_links:
+            self.assertTrue(link.startswith(
+                provenance["repository"] + "/blob/" + provenance["revision"] + "/"),
+                f"Source link differs from the diagram revision: {link}")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            build_site(self.manual.source, root / "site", manual=self.manual)
+            export_wiki(self.manual.source, root / "wiki", manual=self.manual)
+            rendered = Page(root / "site" / page.slug / "index.html")
+            self.assertIn(self.manual.site_path + asset, rendered.references)
+            wiki = (root / "wiki" / (page.wiki_name + ".md")).read_text(encoding="utf-8")
+            self.assertIn("](" + asset + ")", wiki)
+            for surface in ("site", "wiki"):
+                self.assertEqual((root / surface / asset).read_bytes(), source)
 
 
 if __name__ == "__main__":
