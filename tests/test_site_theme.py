@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 PROJECT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT / "scripts"))
-from validate_site import Page, script_errors, validate
+from validate_site import ARKDB_VIEWER_CSP, ARKDB_VIEWER_ROUTE, Page, frame_errors, script_errors, validate
 
 
 SCRIPT = '<script src="/assets/theme.js"></script>'
@@ -21,6 +21,30 @@ def html(script=SCRIPT, control=CONTROL, body=""):
         '<!doctype html><html lang="zh-CN"><head><meta name="viewport" content="width=device-width">'
         f"<title>Theme fixture</title>{script}</head><body><main><h1>Theme fixture</h1>"
         f"{control}{body}</main></body></html>"
+    )
+
+
+def viewer_html():
+    return (
+        '<!doctype html><html lang="zh-CN"><head><meta name="viewport" content="width=device-width">'
+        f'<meta http-equiv="Content-Security-Policy" content="{ARKDB_VIEWER_CSP}">'
+        '<title>Viewer fixture</title>'
+        f'<script src="{ARKDB_VIEWER_ROUTE}init.js"></script></head><body>'
+        '<div inert class="toolbar"><button id="btn-theme" type="button" aria-label="Theme"></button></div>'
+        '<main><h1>Viewer fixture</h1>'
+        '<script id="archify-source-evidence-data" type="application/json">{}</script>'
+        '<script id="archify-i18n-data" type="application/json">{}</script>'
+        '<div inert class="diagram-container"></div><aside inert class="reader-rail"></aside>'
+        f'</main><script src="{ARKDB_VIEWER_ROUTE}viewer.js"></script></body></html>'
+    )
+
+
+def viewer_frame():
+    return (
+        f'<iframe class="docs-diagram-frame" src="{ARKDB_VIEWER_ROUTE}" '
+        'title="ArkDB 交互架构图" loading="lazy" referrerpolicy="no-referrer" '
+        "allow=\"clipboard-write; fullscreen; camera 'none'; microphone 'none'; "
+        "geolocation 'none'\" allowfullscreen></iframe>"
     )
 
 
@@ -135,6 +159,63 @@ class SiteThemeTests(unittest.TestCase):
         )
         with patch("validate_site.SITE", self.root), patch("validate_site.build_policy"):
             self.assertTrue(any("only an empty head script" in error for error in validate()))
+
+    def test_viewer_exception_requires_exact_scripts_data_csp_and_inert_controls(self):
+        original = viewer_html()
+        self.assertEqual(script_errors(self.parse(original), viewer=True), [])
+        self.assertTrue(script_errors(self.parse(original)))
+        self.assertTrue(script_errors(self.parse(original), viewer=True, archived=True))
+        variants = [
+            original.replace(ARKDB_VIEWER_ROUTE + "viewer.js", "https://example.com/viewer.js"),
+            original.replace("</body>", "<script>alert(1)</script></body>"),
+            original.replace('type="application/json"', 'type="text/javascript"', 1),
+            original.replace("{}</script>", "[]</script>", 1),
+            original.replace("archify-i18n-data", "unapproved-data"),
+            original.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'"),
+            original.replace('<div inert class="diagram-container">', '<div class="diagram-container">'),
+            original.replace(
+                f'<script src="{ARKDB_VIEWER_ROUTE}init.js"></script>',
+                f'<template><script src="{ARKDB_VIEWER_ROUTE}init.js"></script></template>'),
+            original.replace(
+                f'<script src="{ARKDB_VIEWER_ROUTE}viewer.js">',
+                f'<script src="{ARKDB_VIEWER_ROUTE}viewer.js" src="https://example.com/other.js">'),
+        ]
+        for content in variants:
+            with self.subTest(content=content[-100:]):
+                self.assertTrue(script_errors(self.parse(content), viewer=True))
+
+    def test_full_validator_scopes_the_viewer_exception_to_one_exact_route(self):
+        self.fixture_site()
+        directory = self.root / "arkdb" / "architecture" / "explore"
+        directory.mkdir(parents=True)
+        (directory / "index.html").write_text(viewer_html(), encoding="utf-8")
+        for name in ("init.js", "viewer.js"):
+            (directory / name).write_text("", encoding="utf-8")
+        (directory.parent / "index.html").write_text(html(body=viewer_frame()), encoding="utf-8")
+        with patch("validate_site.SITE", self.root), patch("validate_site.build_policy"):
+            self.assertEqual(validate(), [])
+        other = directory / "nested" / "index.html"
+        other.parent.mkdir()
+        other.write_text(viewer_html(), encoding="utf-8")
+        with patch("validate_site.SITE", self.root), patch("validate_site.build_policy"):
+            errors = validate()
+        self.assertTrue(any("explore/nested/index.html" in error and "script" in error for error in errors))
+
+    def test_iframe_exception_requires_the_local_viewer_title_and_exact_permissions(self):
+        frame = viewer_frame()
+        self.assertEqual(frame_errors(self.parse(html(body=frame)), architecture=True), [])
+        self.assertTrue(frame_errors(self.parse(html(body=frame))))
+        variants = [
+            frame + frame,
+            frame.replace(ARKDB_VIEWER_ROUTE, "https://example.com/"),
+            frame.replace('title="ArkDB 交互架构图"', ""),
+            frame.replace("clipboard-write;", "clipboard-read; clipboard-write;"),
+            frame.replace("></iframe>", "/>"),
+            "<template>" + frame + "</template>",
+        ]
+        for content in variants:
+            with self.subTest(frame=content):
+                self.assertTrue(frame_errors(self.parse(html(body=content)), architecture=True))
 
 
 if __name__ == "__main__":

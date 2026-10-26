@@ -6,6 +6,8 @@ ArkDB 是 HarmonyOS 应用里的 ArkTS 数据库驱动，不是本地数据库�
 
 ## 总览图
 
+网站在此处提供缩放、节点查找、关系与源码查看以及图片导出，也可以[独立打开交互图](https://orcasql-workbench.github.io/arkdb/architecture/explore/)。Wiki、打印和禁用 JavaScript 时保留静态图。
+
 ![ArkDB 总览架构：宿主通过公共工厂和 MySqlConnection 调用命令、协议分帧与 TCP/TLS；core 提供共享契约，取消使用独立控制会话。](assets/arkdb-architecture.svg)
 
 [打开 SVG 原图](assets/arkdb-architecture.svg)可缩放阅读。绿色箭头是主要调用链路，粉色箭头是握手与认证，紫色虚线表示源码依赖；调用的响应沿原链路反向返回。共享核心不是单独的进程或网络服务，图中只汇总绘制一条依赖线。

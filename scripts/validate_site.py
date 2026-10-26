@@ -1,5 +1,6 @@
 from collections import Counter
 from html.parser import HTMLParser
+import json
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 import sys
@@ -9,6 +10,13 @@ from build_privacy import VOID_ELEMENTS, build as build_policy
 
 SITE = Path(__file__).resolve().parent.parent / "site"
 PAGES_PATH = "/"
+ARKDB_VIEWER = "arkdb/architecture/explore/index.html"
+ARKDB_VIEWER_ROUTE = "/arkdb/architecture/explore/"
+ARKDB_VIEWER_CSP = (
+    "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data: blob:; font-src 'self' data:; media-src blob:; "
+    "connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+)
 
 
 class Page(HTMLParser):
@@ -32,6 +40,10 @@ class Page(HTMLParser):
         self.theme_controls = 0
         self.theme_settings = []
         self.theme_buttons = []
+        self.viewer_theme_buttons = []
+        self.viewer_surfaces = []
+        self.iframes = []
+        self.csp = []
         self.feed(path.read_text(encoding="utf-8"))
         self.close()
 
@@ -48,6 +60,8 @@ class Page(HTMLParser):
             self.lang = attrs.get("lang")
         if tag == "meta" and attrs.get("name") == "viewport":
             self.viewport = "width=device-width" in attrs.get("content", "")
+        if tag == "meta" and attrs.get("http-equiv", "").lower() == "content-security-policy":
+            self.csp.append(attrs.get("content", ""))
         if tag == "title":
             self.in_title = True
         if tag == "h1":
@@ -58,6 +72,7 @@ class Page(HTMLParser):
             self.active_script = {
                 "attributes": attributes, "content": "",
                 "head": self.parents == ["html", "head"], "self_closing": False,
+                "parents": tuple(self.parents),
             }
             self.scripts.append(self.active_script)
         self.event_handlers.extend(name for name in attrs if name.startswith("on"))
@@ -70,6 +85,17 @@ class Page(HTMLParser):
                 and attrs.get("value") == "system" and bool(attrs.get("aria-label"))
                 and "nav" not in self.parents
             )
+        if attrs.get("id") == "btn-theme":
+            self.viewer_theme_buttons.append(
+                tag == "button" and attrs.get("type") == "button" and bool(attrs.get("aria-label"))
+            )
+        for surface in ("toolbar", "diagram-container", "reader-rail"):
+            if surface in attrs.get("class", "").split():
+                self.viewer_surfaces.append((surface, "inert" in attrs))
+        if tag == "iframe":
+            self.iframes.append({
+                "attributes": attributes, "parents": tuple(self.parents), "self_closing": False,
+            })
         for attribute in ("href", "src"):
             if attrs.get(attribute):
                 self.references.append(attrs[attribute])
@@ -90,6 +116,8 @@ class Page(HTMLParser):
         self.handle_starttag(tag, attributes)
         if tag == "script":
             self.active_script["self_closing"] = True
+        if tag == "iframe":
+            self.iframes[-1]["self_closing"] = True
         self.handle_endtag(tag)
 
     def handle_data(self, data):
@@ -99,7 +127,7 @@ class Page(HTMLParser):
             self.active_script["content"] += data
 
 
-def script_errors(page, *, archived=False):
+def script_errors(page, *, archived=False, viewer=False):
     failures = []
     if page.event_handlers:
         failures.append("inline event handlers are not allowed")
@@ -108,6 +136,42 @@ def script_errors(page, *, archived=False):
     if archived:
         if page.scripts or page.theme_controls or page.theme_settings:
             failures.append("historical policy pages must remain script-free without theme controls")
+        return failures
+    if viewer:
+        expected = [
+            ([("src", ARKDB_VIEWER_ROUTE + "init.js")], ("html", "head")),
+            ([("id", "archify-source-evidence-data"), ("type", "application/json")],
+             ("html", "body", "main")),
+            ([("id", "archify-i18n-data"), ("type", "application/json")],
+             ("html", "body", "main")),
+            ([("src", ARKDB_VIEWER_ROUTE + "viewer.js")], ("html", "body")),
+        ]
+        if len(page.scripts) != len(expected):
+            failures.append("the architecture viewer requires its exact local scripts and inert data blocks")
+        for script, (attributes, parents) in zip(page.scripts, expected):
+            if (script["attributes"] != attributes or script["parents"] != parents
+                    or script["self_closing"]):
+                failures.append("only the approved architecture viewer scripts and data are allowed")
+                continue
+            if attributes[0][0] == "src":
+                if script["content"].strip():
+                    failures.append("architecture viewer executable scripts must be external and empty")
+            else:
+                try:
+                    data = json.loads(script["content"])
+                except ValueError:
+                    failures.append("architecture viewer data blocks must contain valid JSON objects")
+                else:
+                    if not isinstance(data, dict):
+                        failures.append("architecture viewer data blocks must contain JSON objects")
+        if page.csp != [ARKDB_VIEWER_CSP]:
+            failures.append("the architecture viewer requires its restrictive local-resource CSP")
+        if (page.viewer_theme_buttons != [True] or page.theme_controls
+                or page.theme_settings):
+            failures.append("expected one labelled architecture viewer theme button")
+        if sorted(page.viewer_surfaces) != [
+                ("diagram-container", True), ("reader-rail", True), ("toolbar", True)]:
+            failures.append("architecture viewer controls must remain inert until initialization")
         return failures
     if len(page.scripts) != 1:
         failures.append("expected exactly one approved local theme script")
@@ -119,6 +183,23 @@ def script_errors(page, *, archived=False):
             or page.theme_buttons != [True]):
         failures.append("expected one initially hidden labelled theme button outside navigation")
     return failures
+
+
+def frame_errors(page, *, architecture=False):
+    if not architecture:
+        return ["iframes are allowed only on the ArkDB architecture manual page"] if page.iframes else []
+    expected = [
+        ("class", "docs-diagram-frame"), ("src", ARKDB_VIEWER_ROUTE),
+        ("title", "ArkDB 交互架构图"), ("loading", "lazy"),
+        ("referrerpolicy", "no-referrer"),
+        ("allow", "clipboard-write; fullscreen; camera 'none'; microphone 'none'; geolocation 'none'"),
+        ("allowfullscreen", None),
+    ]
+    if (len(page.iframes) != 1 or page.iframes[0]["attributes"] != expected
+            or page.iframes[0]["self_closing"] or "main" not in page.iframes[0]["parents"]
+            or any(parent in page.iframes[0]["parents"] for parent in ("template", "noscript", "title"))):
+        return ["expected one labelled local architecture viewer iframe with approved permissions"]
+    return []
 
 
 def validate():
@@ -146,7 +227,14 @@ def validate():
             failures.append(f"{name}: expected a title, one h1 and one main element")
         failures.extend(
             f"{name}: {error}"
-            for error in script_errors(page, archived=path.is_relative_to(SITE / "privacy" / "versions"))
+            for error in script_errors(
+                page, archived=path.is_relative_to(SITE / "privacy" / "versions"),
+                viewer=name == ARKDB_VIEWER,
+            )
+        )
+        failures.extend(
+            f"{name}: {error}"
+            for error in frame_errors(page, architecture=name == "arkdb/architecture/index.html")
         )
         for identifier, count in page.ids.items():
             if count > 1:
@@ -199,4 +287,4 @@ if __name__ == "__main__":
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
         raise SystemExit(1)
-    print("Validated policy exports and archives, approved theme scripts, site structure, site-root links, local assets and formal-policy release labels.")
+    print("Validated policy exports and archives, scoped scripts and viewer frames, site structure, site-root links, local assets and formal-policy release labels.")
