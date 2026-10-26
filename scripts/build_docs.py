@@ -7,6 +7,7 @@ import re
 import sys
 import unicodedata
 from urllib.parse import quote, unquote, urlsplit, urlunsplit
+import xml.etree.ElementTree as ET
 
 from markdown_it import MarkdownIt
 from pygments import highlight
@@ -19,6 +20,9 @@ REPOSITORY_URL = "https://github.com/OrcaSQL-Workbench/orcasql-workbench.github.
 ASSET_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".svg"}
 SITE_MANIFEST = ".docs-generated-manifest.json"
 WIKI_MANIFEST = ".docs-sync-manifest.json"
+ARKDB_VIEWER_ROUTE = "/arkdb/architecture/explore/"
+ARKDB_VIEWER_URL = "https://orcasql-workbench.github.io" + ARKDB_VIEWER_ROUTE
+ARKDB_VIEWER_FILES = ("init.js", "viewer.js", "LICENSE-Archify.txt", "LICENSE-JetBrainsMono.txt")
 CODE_LEXERS = {
     "typescript": "typescript",
     "json5": "json5",
@@ -207,6 +211,9 @@ class Documentation:
 
     def link(self, page, destination, surface, image=False):
         url = urlsplit(destination)
+        if (not image and destination == ARKDB_VIEWER_URL and
+                self.manual == MANUALS["arkdb"] and page.source == "Architecture.md"):
+            return ARKDB_VIEWER_ROUTE if surface == "site" else destination
         if url.scheme in ("https", "mailto") and not image:
             return destination
         if url.scheme or url.netloc:
@@ -263,6 +270,30 @@ class Documentation:
     def html(self, page):
         renderer, tokens, environment = self.parsed(page)
         renderer.options["highlight"] = highlight_code
+        interactive = self.manual == MANUALS["arkdb"] and page.source == "Architecture.md"
+        diagram_count = 0
+        if interactive:
+            render_image = renderer.renderer.rules["image"]
+
+            def architecture_image(tokens, index, options, environment):
+                nonlocal diagram_count
+                image = render_image(tokens, index, options, environment)
+                if tokens[index].attrGet("src") != "/arkdb/assets/arkdb-architecture.svg":
+                    return image
+                diagram_count += 1
+                return (
+                    '<span class="docs-diagram">'
+                    '<span class="docs-diagram-interactive">'
+                    f'<iframe class="docs-diagram-frame" src="{ARKDB_VIEWER_ROUTE}" '
+                    'title="ArkDB 交互架构图" loading="lazy" referrerpolicy="no-referrer" '
+                    "allow=\"clipboard-write; fullscreen; camera 'none'; microphone 'none'; "
+                    "geolocation 'none'\" allowfullscreen></iframe>"
+                    f'<a class="docs-diagram-open" href="{ARKDB_VIEWER_ROUTE}" '
+                    'target="_blank" rel="noopener noreferrer">在独立页面打开交互图</a>'
+                    '</span><span class="docs-diagram-static">' + image + '</span></span>'
+                )
+
+            renderer.renderer.rules["image"] = architecture_image
         identifiers = {}
         for index, token in enumerate(tokens):
             if token.type == "heading_open":
@@ -277,7 +308,76 @@ class Documentation:
                     child.attrSet("href", self.link(page, child.attrGet("href"), "site"))
                 elif child.type == "image":
                     child.attrSet("src", self.link(page, child.attrGet("src"), "site", image=True))
-        return renderer.renderer.render(tokens, renderer.options, environment)
+        rendered = renderer.renderer.render(tokens, renderer.options, environment)
+        if interactive and diagram_count != 1:
+            raise ValueError("Architecture.md must contain exactly one architecture SVG image.")
+        return rendered
+
+    def viewer_files(self):
+        if self.manual != MANUALS["arkdb"] or "Architecture.md" not in self.by_source:
+            return {}
+        template = safe_path(self.source, "viewer/index.html").read_text(encoding="utf-8")
+        marker = "<!-- ARKDB_ARCHITECTURE_SVG -->"
+        if template.count(marker) != 1:
+            raise ValueError("The architecture viewer needs exactly one shared-SVG placeholder.")
+        try:
+            svg = ET.fromstring(safe_path(
+                self.source, "assets/arkdb-architecture.svg").read_bytes())
+        except ET.ParseError as error:
+            raise ValueError("The architecture SVG is not valid XML.") from error
+        namespace = "{http://www.w3.org/2000/svg}"
+        allowed_tags = {
+            "svg", "style", "title", "desc", "metadata", "defs", "marker",
+            "polygon", "pattern", "path", "rect", "g", "text", "ellipse",
+            "circle", "line", "polyline", "tspan",
+        }
+        for element in svg.iter():
+            if (not element.tag.startswith(namespace) or
+                    element.tag.removeprefix(namespace) not in allowed_tags):
+                raise ValueError(f"Unsupported inline architecture SVG element: {element.tag}")
+            if element.get("role") not in (None, "img", "presentation", "none"):
+                raise ValueError("The shared architecture SVG must remain a static image.")
+            for attribute, value in element.attrib.items():
+                name = attribute.rsplit("}", 1)[-1].lower()
+                if name.startswith("on") or (name in ("href", "src") and not value.startswith("#")):
+                    raise ValueError(f"Active content is not allowed in the architecture SVG: {attribute}")
+                if (name in ("tabindex", "accesskey", "aria-pressed", "aria-expanded",
+                             "aria-controls", "aria-haspopup", "aria-keyshortcuts")
+                        or (name == "focusable" and value != "false")):
+                    raise ValueError("The shared architecture SVG must not contain interactive controls.")
+        source_data = re.search(
+            r'<script id="archify-source-evidence-data" type="application/json">(.*?)</script>',
+            template, re.DOTALL,
+        )
+        metadata = svg.find(namespace + "metadata")
+        if source_data is None or metadata is None:
+            raise ValueError("The architecture viewer and SVG require source provenance.")
+        evidence = json.loads(source_data[1])
+        provenance = json.loads(metadata.text)
+        if not isinstance(evidence, dict) or not isinstance(provenance, dict):
+            raise ValueError("Architecture source provenance must contain JSON objects.")
+        repository = evidence.get("repository", {})
+        if not isinstance(repository, dict) or not isinstance(evidence.get("nodes"), dict):
+            raise ValueError("Architecture source evidence requires a repository and node map.")
+        nodes = {element.get("data-node-id") for element in svg.iter()
+                 if element.get("data-node-id")}
+        if (repository.get("revision") != provenance.get("revision") or
+                repository.get("url") != provenance.get("repository") or
+                set(evidence.get("nodes", {})) != nodes):
+            raise ValueError("The interactive viewer and static SVG have different source provenance or nodes.")
+        for parent in svg.iter():
+            for child in list(parent):
+                if child.tag == namespace + "style":
+                    parent.remove(child)
+        for attribute in ("style", "width", "height"):
+            svg.attrib.pop(attribute, None)
+        ET.register_namespace("", namespace.removeprefix("{").removesuffix("}"))
+        html = template.replace(marker, ET.tostring(svg, encoding="unicode"))
+        prefix = ARKDB_VIEWER_ROUTE.removeprefix(self.manual.site_path)
+        files = {prefix + "index.html": html.encode("utf-8")}
+        for name in ARKDB_VIEWER_FILES:
+            files[prefix + name] = safe_path(self.source, "viewer/" + name).read_bytes()
+        return files
 
     def wiki_markdown(self, page):
         _, tokens, environment = self.parsed(page)
@@ -387,6 +487,11 @@ def site_page(documentation, page):
     navigation_class = "docs-navigation" + (" docs-navigation-grouped" if any(documentation.navigation) else "")
     main_class = "docs-main" + (" docs-main-wide" if manual == MANUALS["arkdb"] else "")
     body = documentation.html(page)
+    fallback_style = (
+        '<noscript><style>.docs-diagram-interactive{display:none!important}'
+        '.docs-diagram-static{display:block!important}</style></noscript>'
+        if manual == MANUALS["arkdb"] and page.source == "Architecture.md" else ""
+    )
     source_url = REPOSITORY_URL + "/blob/main/" + manual.source_path + "/" + quote(page.source, safe="")
     wiki_url = manual.wiki_url + "/" + page.wiki_route
     workbench_current = ' aria-current="page"' if manual == MANUALS["workbench"] else ""
@@ -401,6 +506,7 @@ def site_page(documentation, page):
   <script src="/assets/theme.js"></script>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
+  {fallback_style}
 </head>
 <body>
   <a class="skip-link" href="#main">跳到文档正文</a>
@@ -439,6 +545,7 @@ def site_page(documentation, page):
 def build_site(source=PROJECT / "docs", destination=PROJECT / "site" / "docs", *, manual=MANUALS["workbench"]):
     documentation = Documentation(source, manual)
     files = documentation.assets()
+    files.update(documentation.viewer_files())
     for page in documentation.pages:
         relative = (page.slug + "/" if page.slug else "") + "index.html"
         files[relative] = site_page(documentation, page).encode("utf-8")

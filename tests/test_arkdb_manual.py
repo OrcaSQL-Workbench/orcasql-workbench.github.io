@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-from build_docs import MANUALS, Documentation, build_site, export_wiki
+from build_docs import ARKDB_VIEWER_ROUTE, MANUALS, Documentation, build_site, export_wiki
 from validate_site import Page
 
 
@@ -150,6 +150,9 @@ class ArkDbManualTests(unittest.TestCase):
                             (root / target.removeprefix(self.manual.site_path)).is_file(),
                             f"{route}: missing asset {reference}",
                         )
+                        continue
+                    if target == ARKDB_VIEWER_ROUTE:
+                        self.assertTrue((root / "architecture" / "explore" / "index.html").is_file())
                         continue
                     self.assertIn(target, pages, f"{route}: missing target {reference}")
                     if url.fragment:

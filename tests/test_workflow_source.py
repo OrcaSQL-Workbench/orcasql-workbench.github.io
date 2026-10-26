@@ -202,6 +202,15 @@ class WebsiteWorkflowGateTests(unittest.TestCase):
         self.assertNotIn("always()", self.deploy)
         self.assertNotIn("continue-on-error:", self.deploy)
 
+    def test_pages_publication_runs_both_browser_suites(self):
+        command = "run: node --test tests/theme.test.cjs tests/viewer.test.cjs"
+        self.assertIn(command, self.validate)
+        self.assertLess(self.validate.index(command), self.validate.index("name: Upload the site"))
+        maintainer = (
+            Path(__file__).resolve().parent.parent / ".maintainer" / "README.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("node --test tests\\theme.test.cjs tests\\viewer.test.cjs", maintainer)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -190,6 +190,10 @@ a:hover .arrow { transform: translateX(3px); }
 .docs-article pre code .tok-nv,
 .docs-article pre code .tok-nt { color: var(--theme-code-variable, #7d3c76); }
 .docs-article img { max-width: 100%; height: auto; }
+.docs-diagram, .docs-diagram-interactive { display: block; }
+.docs-diagram-frame { display: block; width: 100%; height: clamp(640px, 85vh, 1000px); border: 1px solid var(--line); border-radius: 8px; background: var(--theme-surface, #fff); }
+.docs-diagram-open { display: inline-block; margin-top: 8px; font-size: 14px; }
+.docs-diagram-static { display: none; }
 .docs-article blockquote { margin: 20px 0; padding: 15px 18px; background: var(--theme-code, #eef3f9); color: var(--theme-muted, #435e73); border-radius: 6px; }
 .docs-article blockquote p:last-child { margin-bottom: 0; }
 .docs-footer { margin-top: 37px; border-top: 1px solid var(--line); padding-top: 19px; display: flex; flex-wrap: wrap; gap: 12px 23px; font-size: 12px; }
@@ -260,4 +264,6 @@ a:hover .arrow { transform: translateX(3px); }
   .docs-navigation, .docs-footer { display: none; }
   .docs-main { display: block; padding: 0; }
   .docs-article { max-width: none; padding: 0; border: 0; }
+  .docs-diagram-interactive { display: none !important; }
+  .docs-diagram-static { display: block !important; }
 }
