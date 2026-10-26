@@ -37,7 +37,7 @@ ArkDB 的接口与支持边界应对照上游公共 `mysql\Index.ets`、包指�
 
 静态图不保留 `tabindex`、按钮角色、交互状态 ARIA 或可点击的悬停提示，仍保留图和节点的描述。小字号标签与实际合成背景的对比度至少为 `4.5:1`，自动与显式浅深色都要满足；`test_arkdb_manual.py` 检查这些约束。
 
-`docs\arkdb\viewer` 是网站专用的受控交互模板、两份本地脚本和第三方许可。构建器把同一份静态 SVG 注入模板，核对源码提交和节点集合后生成 `/arkdb/architecture/explore/`，并在架构手册页嵌入该视图。Wiki 不复制交互运行时，Markdown 仍禁用原始 HTML。手册无脚本和打印时显示 SVG；交互运行时加载失败时也显示静态图并报告错误。
+`docs\arkdb\viewer` 是网站专用的受控交互模板、两份本地脚本和第三方许可。构建器把同一份静态 SVG 注入模板，核对源码提交和节点集合后生成 `/arkdb/architecture/explore/`，并在架构手册页嵌入该视图。Wiki 不复制交互运行时，Markdown 仍禁用原始 HTML。手册无脚本和打印时显示 SVG；交互运行时加载失败时退出演示模式、显示可滚动的静态图并报告错误，重载前不能再次进入演示模式。
 
 交互运行时基于 Archify 3.0.1 生成文件，原始 HTML 的 SHA-256 为 `b4cc8b69093463ed7a45e51f74108ef0de253a538417cf3fbce66d8a3c984a33`。仓库保留 Archify MIT 和 JetBrains Mono OFL 许可，不依赖本机 Skill 或在线资源来构建。更新运行时需复查 CSP、精确脚本白名单和交互功能；导出的 SVG 仍须清除交互控件。交互页与本站共用主题键，支持跟随系统、浅色、深色及同源页面同步。
 

@@ -187,3 +187,41 @@ for (const canonicalStateClean of [true, false]) {
     assert.equal(result, canonicalStateClean);
   });
 }
+
+for (const entry of ["URL", "toolbar"]) {
+  test(`failure exits presentation mode entered through the ${entry}`, () => {
+    const state = boot({ search: entry === "URL" ? "?present=1" : "" });
+    state.viewer.prepare();
+    state.viewer.ready();
+    if (entry === "toolbar") state.root.setAttribute("data-present", "true");
+    assert.equal(state.root.getAttribute("data-present"), "true");
+    state.events.get("error")({ error: new Error("presentation failed") });
+    assert.equal(state.root.getAttribute("data-viewer-failed"), "true");
+    assert.equal(state.root.getAttribute("data-present"), null);
+    assert.ok(state.surfaces.every(surface => surface.hasAttribute("inert")));
+    assert.match(state.status.textContent, /静态架构图/);
+  });
+}
+
+test("failed viewer cannot re-enter presentation through its public controls", () => {
+  const state = boot();
+  state.events.get("error")({ error: new Error("viewer failed") });
+  const start = runtime.indexOf("    Archify.presentation = (function () {");
+  const ending = "\n    })();";
+  const end = runtime.indexOf(ending, start);
+  assert.ok(start >= 0 && end > start, "The live presentation controller must be exercised.");
+  const controls = { "btn-present": element(), "present-label": element() };
+  const context = {
+    Archify: {},
+    document: { documentElement: state.root, getElementById: id => controls[id] },
+    window: { scrollY: 0, scrollTo() {}, location: { href: "https://example.com/" } },
+    history: { replaceState() {} }, URL,
+    requestAnimationFrame: callback => callback(),
+    viewerText: value => value,
+  };
+  vm.runInNewContext(runtime.slice(start, end + ending.length), context,
+    { filename: "viewer/presentation", timeout: 1000 });
+  assert.equal(context.Archify.presentation.enter(), false);
+  assert.equal(context.Archify.presentation.toggle(), false);
+  assert.equal(state.root.getAttribute("data-present"), null);
+});

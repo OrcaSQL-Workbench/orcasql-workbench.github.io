@@ -82,6 +82,7 @@
 
   function fail(error) {
     console.error("The architecture viewer failed; the static diagram remains available.", error);
+    root.removeAttribute("data-present");
     root.setAttribute("data-viewer-failed", "true");
     for (const surface of document.querySelectorAll(".toolbar, .diagram-container, .reader-rail")) {
       surface.setAttribute("inert", "");

@@ -5907,7 +5907,7 @@ var Archify = {};
 
       function setActive(next, options) {
         options = options || {};
-        next = Boolean(next);
+        next = Boolean(next) && !html.hasAttribute('data-viewer-failed');
         if (next === active()) {
           render(next);
           return next;
