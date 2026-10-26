@@ -96,8 +96,8 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: "22"
-      - name: Test theme behavior
-        run: node --test tests/theme.test.cjs
+      - name: Test theme and viewer behavior
+        run: node --test tests/theme.test.cjs tests/viewer.test.cjs
       - name: Test documentation and policy publishing
         run: python -m unittest discover -s tests -v
       - name: Check policy exports and complete first-parent archive history

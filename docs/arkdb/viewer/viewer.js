@@ -250,8 +250,9 @@ var Archify = {};
       }
 
       function cleanExportClone(clone) {
-        cleanViewerClone(clone);
+        var canonicalStateClean = cleanViewerClone(clone);
         window.ArkDBViewer.cleanExport(clone);
+        return canonicalStateClean;
       }
 
       function cleanViewerClone(clone) {

@@ -97,13 +97,13 @@ ArkDB 手册通过 `docs-main-wide` 让正文填满目录右侧的可用空间�
 
 ## 本地检查
 
-检查需要 Python 和 Node.js 22 或更高版本。Node.js 只用于主题回归测试，不需要安装 npm 包。在仓库根目录运行：
+检查需要 Python 和 Node.js 22 或更高版本。Node.js 用于主题与交互视图回归测试，不需要安装 npm 包。在仓库根目录运行：
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-docs.txt
 python scripts\build_privacy.py --check
-node --test tests\theme.test.cjs
+node --test tests\theme.test.cjs tests\viewer.test.cjs
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 .\.venv\Scripts\python.exe scripts\build_docs.py --wiki-output .build\wiki
 python scripts\validate_site.py

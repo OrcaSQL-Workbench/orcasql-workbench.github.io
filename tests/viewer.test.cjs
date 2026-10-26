@@ -5,6 +5,7 @@ const test = require("node:test");
 const vm = require("node:vm");
 
 const source = fs.readFileSync(path.join(__dirname, "..", "docs", "arkdb", "viewer", "init.js"), "utf8");
+const runtime = fs.readFileSync(path.join(__dirname, "..", "docs", "arkdb", "viewer", "viewer.js"), "utf8");
 const key = "orcasql-workbench.theme";
 
 function element(attributes = {}) {
@@ -157,3 +158,32 @@ test("downloaded SVG retains image semantics without live keyboard controls", ()
   }
   assert.match(state.svg.children.at(-1).textContent, /cursor:default/);
 });
+
+for (const canonicalStateClean of [true, false]) {
+  test(`export cleanup bridge preserves the ${canonicalStateClean} canonical-state result`, () => {
+    const bridge = runtime.match(/function cleanExportClone\(clone\) \{[\s\S]*?\n\s*\}/);
+    assert.ok(bridge, "The live export cleanup bridge must be exercised.");
+    const clone = {};
+    const calls = [];
+    const context = {
+      clone,
+      cleanViewerClone(value) {
+        assert.equal(value, clone);
+        calls.push("viewer");
+        return canonicalStateClean;
+      },
+      window: {
+        ArkDBViewer: {
+          cleanExport(value) {
+            assert.equal(value, clone);
+            calls.push("accessibility");
+          },
+        },
+      },
+    };
+    const result = vm.runInNewContext(bridge[0] + "\ncleanExportClone(clone);", context,
+      { filename: "viewer/export-cleanup", timeout: 1000 });
+    assert.deepEqual(calls, ["viewer", "accessibility"]);
+    assert.equal(result, canonicalStateClean);
+  });
+}
