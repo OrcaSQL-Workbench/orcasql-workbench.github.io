@@ -6,7 +6,7 @@ MySQL 1.1.0 保留 `setAutocommit`、`commit`、`rollback`，通过 `features.tr
 
 ## 提交与回滚示例
 
-这个示例使用 1.1.0 的回调事务。驱动在回调成功后提交，在同步且可回滚的失败后尝试回滚；连接关闭错误仍单独保留。将代码保存为 `src\main\ets\sample\TransactionExample.ets`，由 Worker 调用。
+这个示例使用 1.1.0 的回调事务。入口要求连接 Ready、会话事务状态已知、没有已有事务，并且 `autocommit = true`；不要把旧手动事务示例中 `autocommit = false` 的配置直接传入。驱动在回调成功后提交，在同步且可回滚的失败后尝试回滚；连接关闭错误仍单独保留。将代码保存为 `src\main\ets\sample\TransactionExample.ets`，由 Worker 调用。
 
 ```typescript
 import {
@@ -94,7 +94,7 @@ export async function transferSampleBalance(config: ConnectionConfig, password: 
 
 ## 查看会话状态
 
-`setAutocommit`、`commit` 和 `rollback` 返回 `DatabaseSessionStatus`。只有 `known` 明确为真时，才使用其中的自动提交和事务标记；查询结果对应检查 `statusKnown`。回调中的 `MySqlSession` 只在 `run()` 未结束时有效，结束后不能继续调用。
+`setAutocommit`、`commit` 和 `rollback` 返回 `DatabaseSessionStatus`。只有 `known` 明确为真时，才使用其中的自动提交和事务标记；查询结果对应检查 `statusKnown`。回调中的 `MySqlSession` 只在事务回调函数尚未 resolve/reject 时有效；回调一结束就会失效，即使外层 `run()` 仍在等待取消清理、提交或回滚。不要保存 session 到回调外，并在回调返回前 `await` 完成所有会话操作。
 
 `MySqlTransactionOptions` 可选择 `ReadCommitted`、`RepeatableRead`、`Serializable`、`ReadUncommitted` 或服务器默认隔离级别，还可设置 `readOnly` 和 `consistentSnapshot`。事务特征在 `START TRANSACTION` 前设置，不改变调用方原有 autocommit 设置。
 

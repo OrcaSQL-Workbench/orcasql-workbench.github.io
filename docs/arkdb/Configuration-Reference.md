@@ -93,4 +93,4 @@
 | `MySqlLongDataOptions` | `chunkBytes = 65536`、`maxTotalBytes = 67108864`、`uploadTimeoutMs = 30000` | 预处理长文本/二进制参数 |
 | `MySqlTransactionOptions` | 默认隔离、`readOnly` 未设置、`consistentSnapshot = false` | 回调事务属性 |
 
-这些类型都提供 `validate()` 和 `clone()`，并在内部复制嵌套的 `QueryOptions`。各能力的所有权、失败与重试边界见[预处理与高级执行](Advanced-Execution.md)、[事务](Transactions.md)和[取消与超时](Cancellation-and-Timeouts.md)。
+这些类型都提供 `validate()` 和 `clone()`，但选项结构不同。`MySqlDeadlineOptions`、`MySqlBatchOptions`、`MySqlInsertRowsOptions` 和 `MySqlLongDataOptions` 含有嵌套的 `queryOptions`；`MySqlCursorOptions` 直接继承 `QueryOptions`，因此 `maxRows`、`maxResultBytes` 等预算字段直接设置在游标选项上；`MySqlTransactionOptions` 没有 `queryOptions`，只包含事务属性。各能力的所有权、失败与重试边界见[预处理与高级执行](Advanced-Execution.md)、[事务](Transactions.md)和[取消与超时](Cancellation-and-Timeouts.md)。

@@ -112,6 +112,9 @@ class ArkDbManualTests(unittest.TestCase):
         self.assertIn("`done` 只表示游标已经结束并释放连接所有权", advanced)
         self.assertIn("不证明服务器结果已经完整读完", advanced)
         self.assertIn("累计 `maxRows` 或 `maxResultBytes` 恰好用尽", advanced)
+        self.assertIn("非空 batch 要求会话事务状态已知", advanced)
+        self.assertIn("在 PREPARE 前拒绝已经开启的事务", advanced)
+        self.assertIn("普通结果集仍可能以 `truncated = true` 成功返回", advanced)
 
         connections = self.documentation.source.joinpath(
             "Connections.md").read_text(encoding="utf-8")
@@ -125,6 +128,17 @@ class ArkDbManualTests(unittest.TestCase):
                       getting_started)
         self.assertIn("`selectBoundValue()` 只能在 `connect()` 完成后调用",
                       getting_started)
+
+        configuration = self.documentation.source.joinpath(
+            "Configuration-Reference.md").read_text(encoding="utf-8")
+        self.assertIn("`MySqlCursorOptions` 直接继承 `QueryOptions`", configuration)
+        self.assertIn("`MySqlTransactionOptions` 没有 `queryOptions`", configuration)
+
+        transactions = self.documentation.source.joinpath(
+            "Transactions.md").read_text(encoding="utf-8")
+        self.assertIn("并且 `autocommit = true`", transactions)
+        self.assertIn("只在事务回调函数尚未 resolve/reject 时有效", transactions)
+        self.assertIn("在回调返回前 `await` 完成所有会话操作", transactions)
 
     def test_old_page_routes_titles_and_heading_links_remain_available(self):
         legacy = json.loads((FIXTURES / "arkdb-legacy-routes.json").read_text(encoding="utf-8"))

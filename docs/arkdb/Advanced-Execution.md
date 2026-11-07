@@ -28,11 +28,11 @@ MySQL 1.1.0 把数据库特有的高级执行能力放在可选的 `mysqlFeature
 
 ## 批处理与受限 INSERT
 
-`mysqlFeatures.batch.execute(sql, rows, options?)` 复用一条内部预处理 statement，逐项串行执行参数行。默认最多 1000 项、累计缓冲 32 MiB；遇到首个失败停止，并通过 `MySqlBatchError` 保留已经完成的结果、失败索引和执行结果。它不会自动开启、提交或回滚事务。
+`mysqlFeatures.batch.execute(sql, rows, options?)` 复用一条内部预处理 statement，逐项串行执行参数行。默认最多 1000 项、累计缓冲 32 MiB；遇到首个失败停止，并通过 `MySqlBatchError` 保留已经完成的结果、失败索引和执行结果。非空 batch 要求会话事务状态已知，并在 PREPARE 前拒绝已经开启的事务；它不会自动开启、提交或回滚事务，也不能放进手动事务来获得批次原子性。
 
 `mysqlFeatures.insertRows.execute(tableParts, columns, rows, options?)` 只生成受限的 `INSERT INTO ... VALUES (...)`。表和列按标识符引用，值只能是类型化参数；接口不接受原始 SQL、表达式、`INSERT IGNORE`、`REPLACE` 或 upsert 后缀。驱动按 16 MiB packet 上限和 65535 参数上限分组，并保留部分完成结果。
 
-受限 INSERT 可以在调用方拥有的手动事务或事务回调中运行。完成一个分组只表示服务器完成，不等于事务已经持久提交；未知结果不会自动重试。
+与普通 batch 不同，受限 INSERT 可以在调用方拥有的手动事务或事务回调中运行。完成一个分组只表示服务器完成，不等于事务已经持久提交；未知结果不会自动重试。
 
 ## 只读服务端游标
 
@@ -54,7 +54,7 @@ MySQL 1.1.0 把数据库特有的高级执行能力放在可选的 `mysqlFeature
 
 `mysqlFeatures.procedures.call(procedureParts, arguments, options?)` 使用预处理二进制协议调用存储过程。`MySqlProcedureArgument` 明确 `In`、`Out` 和 `InOut` 方向；纯 OUT 使用类型化 NULL 占位符。
 
-`MySqlProcedureResult` 按 wire 顺序保留全部结果，`outResultIndex` 标识 OUT 结果，`outValues` 按声明顺序提供输出值。驱动使用 `SERVER_PS_OUT_PARAMS` 识别输出结果，不创建 session 变量，也不退回文本 `CALL`。结果截断或输出形状不匹配会在完整排空后失败。
+`MySqlProcedureResult` 按 wire 顺序保留全部结果，`outResultIndex` 标识 OUT 结果，`outValues` 按声明顺序提供输出值。驱动使用 `SERVER_PS_OUT_PARAMS` 识别输出结果，不创建 session 变量，也不退回文本 `CALL`。标记的 OUT 结果被截断、行数未知或输出形状不匹配时会在完整排空后失败；普通结果集仍可能以 `truncated = true` 成功返回，调用方必须逐个检查 `results` 中的截断标记。
 
 ## 文本多语句
 
