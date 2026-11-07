@@ -2,7 +2,7 @@
 
 在已连接的 MySQL 会话上调用 `query(sql)`。同一连接同时只执行一个操作，驱动不会把重叠调用自动排队。
 
-本页适用于 MySQL 1.0.2。`sql` 必须来自应用可信逻辑；当前没有参数绑定和预处理语句，不要拼接不可信的用户输入。
+本页适用于 MySQL 1.1.0。`query(sql)` 仍要求文本来自应用可信逻辑；不可信值使用类型化预处理或命名参数，不要拼接进文本 SQL。高级接口见[预处理与高级执行](Advanced-Execution.md)。
 
 ## CRUD 示例的准备
 
@@ -42,7 +42,7 @@ export async function insertSampleRows(connection: DbConnection): Promise<QueryR
 }
 ```
 
-在空的示例表上首次执行，预期 `result.affectedRows` 为 `2`。再次插入相同主键会失败，不能吞掉错误或自动重试。
+在空的示例表上首次执行，预期 `result.affectedRows` 为 `2`。需要超出安全整数范围的精确值时检查可选 `affectedRowsExact`。再次插入相同主键会失败，不能吞掉错误或自动重试。
 
 ## 查询数据
 
@@ -177,11 +177,19 @@ export function displayRow(result: QueryResult, rowIndex: number): string[] {
 
 不要逐块读完后又把所有块拼成一个大数组或字符串，这会失去流式处理的意义。
 
+## 预处理、命名参数和文本脚本
+
+`requireMySqlFeatures(connection).prepared` 使用类型化二进制参数；`named` 按当前会话 SQL mode 解析 `:name`；`insertRows` 只生成受限多行 INSERT。它们把值与 SQL 文本分开，并保留 MySQL 原生结果类型。
+
+`ConnectionConfig.multipleStatements = true` 只适合完全可信的文本脚本。驱动不会按分号拆分，而是把完整文本作为一次 `COM_QUERY` 发送；多个结果仍按 wire 顺序放入 `additionalResults`。它不是参数绑定或转义方案。
+
+准备显式 statement、只读游标、批处理、长参数和存储过程的边界统一见[预处理与高级执行](Advanced-Execution.md)。
+
 ## QueryOptions 默认值
 
 行数、分块、结果字节数和截断后的排空预算，统一见 [QueryOptions 参考](Configuration-Reference.md#queryoptions)。
 
-特别注意：`statementTimeoutMs` 只校验数值，底层驱动不会因此启动语句取消计时器。应用的截止时间与取消流程见[取消与超时](Cancellation-and-Timeouts.md)。
+特别注意：`statementTimeoutMs` 只校验数值，底层驱动不会因此启动语句取消计时器。需要驱动拥有计时和取消收敛时，使用 `mysqlFeatures.deadlines`；见[取消与超时](Cancellation-and-Timeouts.md)。
 
 ## 多个结果集
 

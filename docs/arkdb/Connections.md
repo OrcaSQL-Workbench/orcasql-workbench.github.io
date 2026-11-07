@@ -1,6 +1,6 @@
 # 连接配置与 TLS
 
-MySQL 1.0.2 通过 `ConnectionConfig` 配置连接，密码另行传给 `MySqlDriverFactory.createConnection(config, password)`。创建连接对象时不会联网，调用 `connect()` 后才开始连接。
+MySQL 1.1.0 通过 `ConnectionConfig` 配置连接，密码另行传给 `MySqlDriverFactory.createConnection(config, password)`。创建连接对象时不会联网，调用 `connect()` 后才开始连接。
 
 ## 连接字段
 
@@ -8,7 +8,7 @@ MySQL 1.0.2 通过 `ConnectionConfig` 配置连接，密码另行传给 `MySqlDr
 
 需要把错误标到具体输入框时，使用 `validateIssues()`；其中的 `ConnectionConfigField` 标识对应字段。两种校验都不会打开网络连接。
 
-完整的字段类型、默认值和限制见[配置参考](Configuration-Reference.md#connectionconfig)。密码、连接分组和界面状态不属于连接配置。`clone()` 会复制配置，并隔离嵌套的 TLS 设置。
+完整的字段类型、默认值和限制见[配置参考](Configuration-Reference.md#connectionconfig)。密码、连接分组和界面状态不属于连接配置。`clone()` 会复制配置，并隔离嵌套的 TLS 与会话设置。
 
 ## 定义连接信息并调用
 
@@ -141,6 +141,16 @@ export function configureVerifiedTls(config: ConnectionConfig, caPemPath: string
 证书路径由 HarmonyOS 应用进程解释，不是开发电脑上的路径。应用负责选择文件、拷入沙箱、获得访问权限和保管私钥。`clientCertPath` 与 `clientKeyPath` 要成对设置。
 
 不设置 CA 路径时使用平台信任策略。示例不会替应用选择文件或授权读取任意路径；实机信任链、主机名拒绝和双向 TLS 仍需在目标环境验收。
+
+## 会话初始化与重置
+
+`ConnectionConfig.session` 可以在连接建立时请求会话时区和 SQL mode。未设置的字段保持服务器值；显式空字符串表示请求空 SQL mode。服务器不认识某个时区名称时会直接返回错误，驱动不会在本地替换时区。
+
+`ConnectionConfig.multipleStatements` 和 `preparedCacheSize` 也在构造连接时快照。前者默认关闭，只用于完全可信的文本脚本；后者默认关闭，为一次性预处理执行启用连接私有 LRU。详细边界见[配置参考](Configuration-Reference.md)和[预处理与高级执行](Advanced-Execution.md)。
+
+内置连接的 `mysqlFeatures.session.reset()` 发送 `COM_RESET_CONNECTION`，随后恢复字符集、默认数据库、自动提交和配置的会话值，并核对当前会话指纹。成功会推进物理会话 generation，使显式 statement、游标和私有缓存的旧所有权失效。服务器不支持、响应不确定或重置后状态不匹配时，驱动关闭连接而不是回退到重连或继续复用。
+
+会话重置不是连接池。应用如果自行实现租约，仍要在重置或归还前关闭游标和 statement，并把重置失败的连接销毁。
 
 ## 会话生命周期
 

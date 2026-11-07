@@ -1,6 +1,6 @@
 # 故障排查与问题反馈
 
-先记下实际使用的 HAR 版本、设备/API 和服务器类型，再对照下面的现象检查。这里的用法以 MySQL 1.0.2 为准。
+先记下实际使用的 HAR 版本、设备/API 和服务器类型，再对照下面的现象检查。这里的用法以 MySQL 1.1.0 为准。
 
 ## 安装后找不到 @arkdb/mysql
 
@@ -40,7 +40,13 @@ BIGINT 是 `bigint`，DECIMAL 是字符串，SQL NULL 是 `null`。不要把精�
 
 ## 设置 statementTimeoutMs 后查询还在执行
 
-这个字段只校验数值，不启动语句取消计时器。`Promise.race` 也只改变等待行为。应用要安排计时器、取消请求和原操作收尾，见[取消与超时](Cancellation-and-Timeouts.md)。
+这个字段只校验数值，不启动语句取消计时器。需要驱动拥有计时、取消宽限和连接退役时，使用 `mysqlFeatures.deadlines` 与 `MySqlDeadlineOptions`。`Promise.race` 仍只改变等待行为。见[取消与超时](Cancellation-and-Timeouts.md)。
+
+## 预处理、游标或批处理返回 Unsupported
+
+先通过 `requireMySqlFeatures(connection)` 取得容器，再检查对应成员是否存在；不要只根据 capability hint 推断所有高级能力可用。连接必须已经 Ready 且没有其他命令占用。
+
+游标会在两次 `fetch()` 之间继续占用连接；显式 statement 绑定创建它的物理会话；会话重置会使旧句柄失效。服务器未建立只读游标、预处理参数不匹配或存储过程 OUT 形状不合法都会显式失败，不会静默退回文本拼接。见[预处理与高级执行](Advanced-Execution.md)。
 
 ## 取消返回后能否立即复用连接
 

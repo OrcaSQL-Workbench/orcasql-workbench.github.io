@@ -1,6 +1,6 @@
 # 有界流式读取
 
-结果较多时，用 `queryStream(sql, options, sink)` 逐块处理，不必把全部行保存在内存里。下面的 MySQL 1.0.2 示例只统计行数。
+结果较多时，用 `queryStream(sql, options, sink)` 逐块处理，不必把全部行保存在内存里。下面的 MySQL 1.1.0 示例只统计行数。
 
 ## 按块处理结果
 

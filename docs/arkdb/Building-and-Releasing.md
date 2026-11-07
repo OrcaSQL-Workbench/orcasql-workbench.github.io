@@ -8,13 +8,13 @@
 
 驱动源码的构建基线是 Node.js `>=22.19.0`、DevEco Studio 6.1.1.300 和 HarmonyOS API 24。仓库不下载或重新分发 SDK。
 
-环境变量、驱动选择、单 HAR 构建与产物位置以 ArkDB 的[构建指南](https://github.com/OrcaSQL-Workbench/ArkDB/blob/main/docs/building-drivers.md)为准。维护当前分支时读当前指南；重查 1.0.2 发布包时用[对应源码版本](https://github.com/OrcaSQL-Workbench/ArkDB/tree/f532d0c37adf4dbba7a1a313679f0024822ed752)。
+环境变量、驱动选择、单 HAR 构建与产物位置以 ArkDB 的[构建指南](https://github.com/OrcaSQL-Workbench/ArkDB/blob/main/docs/building-drivers.md)为准。维护当前分支时读当前指南；重查 1.1.0 发布包时用[对应源码版本](https://github.com/OrcaSQL-Workbench/ArkDB/tree/126f786f93416f7d6894d842bf85aa26c7accbe4)。
 
 ## 运行 Worker 示例
 
 示例是完整 Stage 应用，不是驱动内部自动管理的 Worker 客户端。它消费实际 HAR，提供页面、Worker、DTO 和清理逻辑。
 
-运行步骤集中在[示例 README](https://github.com/OrcaSQL-Workbench/ArkDB/blob/f532d0c37adf4dbba7a1a313679f0024822ed752/examples/mysql-client/README.md)。准备好匹配的 HAR 后，用 DevEco Studio 打开项目，配置自己的本地调试签名。仓库不附带签名身份。
+运行步骤集中在[示例 README](https://github.com/OrcaSQL-Workbench/ArkDB/blob/126f786f93416f7d6894d842bf85aa26c7accbe4/examples/mysql-client/README.md)。准备好匹配的 HAR 后，用 DevEco Studio 打开项目，配置自己的本地调试签名。仓库不附带签名身份。
 
 把同样的结构接入自己的应用时，看 [Worker 集成](Worker-Integration.md)，不要复制示例的构建依赖到普通应用。
 
@@ -29,6 +29,8 @@
 | 目标设备/服务器测试 | 实际网络、平台信任、认证、事务、取消和复用行为 |
 
 前几项不能替代最后一项。应用开发者需要了解的限制在[兼容性与升级](Compatibility-and-Upgrading.md#验证范围)，维护命令在[发行流程](https://github.com/OrcaSQL-Workbench/ArkDB/blob/main/docs/releasing.md)中。
+
+MySQL 1.1.0 的密封发行记录为源码提交 `126f786f93416f7d6894d842bf85aa26c7accbe4`、HAR SHA-256 `b1244f2363128a3ce4b08eb35f840d7665b7b9379d2e161eda5ee368cac0081b`、828 个驱动测试、8 个包指南示例和 20 个本地样例用例。样例 HAP 编译及单 HAR 自包含检查通过；真实设备、实时网络、签名身份和生产认证仍未建立。
 
 ## 本机构建，GitHub Release 分发
 

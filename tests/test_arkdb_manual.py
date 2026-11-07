@@ -45,7 +45,7 @@ class ArkDbManualTests(unittest.TestCase):
         self.documentation = Documentation(self.manual.source, self.manual)
 
     def test_examples_match_the_downloaded_release_guide(self):
-        baseline = json.loads((FIXTURES / "arkdb-mysql-1.0.2-examples.json").read_text(encoding="utf-8"))
+        baseline = json.loads((FIXTURES / "arkdb-mysql-1.1.0-examples.json").read_text(encoding="utf-8"))
         examples = baseline["examples"]
         found = set()
         authored = {}

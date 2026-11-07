@@ -1,8 +1,8 @@
 # 配置参考
 
-下面列出 MySQL 1.0.2 的字段、默认值和实际作用。示例用法见[连接与 TLS](Connections.md)及[流式读取](Streaming.md)，版本来源见[兼容性与升级](Compatibility-and-Upgrading.md)。
+下面列出 MySQL 1.1.0 的字段、默认值和实际作用。示例用法见[连接与 TLS](Connections.md)、[预处理与高级执行](Advanced-Execution.md)及[流式读取](Streaming.md)，版本来源见[兼容性与升级](Compatibility-and-Upgrading.md)。
 
-本页内容：[ConnectionConfig](#connectionconfig)、[SslConfig](#sslconfig)、[QueryOptions](#queryoptions)。
+本页内容：[ConnectionConfig](#connectionconfig)、[MySqlSessionOptions](#mysqlsessionoptions)、[SslConfig](#sslconfig)、[QueryOptions](#queryoptions)、[高级执行选项](#高级执行选项)。
 
 ## ConnectionConfig
 
@@ -13,6 +13,9 @@
 | `user` | `string` | 空字符串 | 必填 |
 | `defaultSchema` | `string`，可选 | 未设置 | 认证时选中的默认数据库 |
 | `ssl` | `SslConfig` | 新的 `SslConfig` | TLS 策略与证书设置 |
+| `session` | `MySqlSessionOptions`，可选 | 未设置 | 连接和重置后应用的时区、SQL mode |
+| `multipleStatements` | `boolean` | `false` | 明确启用完全可信的文本多语句 |
+| `preparedCacheSize` | `number`，可选 | 未设置 | `0..256`；0/未设置关闭私有预处理缓存 |
 | `connectTimeoutMs` | `number` | `10000` | 正安全整数，单位毫秒；覆盖打开连接的总截止时间 |
 | `autocommit` | `boolean` | `true` | 请求的初始自动提交状态 |
 
@@ -26,9 +29,18 @@
 | `validateIssues()` | `ConnectionValidationIssue[]` | 在错误之外提供字段定位 |
 | `clone()` | `ConnectionConfig` | 复制配置，嵌套 TLS 配置也独立复制 |
 
-`ConnectionValidationIssue` 包含 `field`、`error` 和可选 `invalidValue`。`ConnectionConfigField` 包括 `Host`、`Port`、`User`、`ConnectTimeoutMs`、`ClientCredentials`、`TlsVersions`。
+`ConnectionValidationIssue` 包含 `field`、`error` 和可选 `invalidValue`。`ConnectionConfigField` 包括 `Host`、`Port`、`User`、`ConnectTimeoutMs`、`ClientCredentials`、`TlsVersions`、`Session`、`SessionTimeZone`、`SessionSqlMode`、`MultipleStatements` 和 `PreparedCacheSize`。
 
-客户端使用 `utf8mb4`。公共配置不提供字符集、压缩、SQL mode、连接属性、引擎标签或未来选项袋，不要添加看似可用但会被忽略的字段。
+客户端使用 `utf8mb4`。公共配置不提供字符集、压缩、连接属性、引擎标签或未来选项袋；SQL mode 只通过类型化的 `session.sqlMode` 设置，不要添加看似可用但会被忽略的字段。
+
+## MySqlSessionOptions
+
+| 字段 | 默认值 | 说明 |
+| --- | --- | --- |
+| `timeZone` | 未设置 | 连接和重置后请求的 MySQL 会话时区；由服务器验证 |
+| `sqlMode` | 未设置 | 连接和重置后请求的 SQL mode；空字符串表示显式清空 |
+
+容器以及已设置的字段必须是非数组对象和有效 UTF-16 原始字符串。驱动不 trim、归一化、强制转换或查询本地时区表。初始化发生在 `connect()` 报告 Ready 之前，并共享连接截止时间。`clone()` 会复制容器和字段。
 
 ## SslConfig
 
@@ -68,4 +80,17 @@
 
 `MAX_QUERY_DRAIN_TIME_MS` 为 `60000`，`MAX_STATEMENT_TIMEOUT_MS` 为 `86400000`。字节预算按驱动估算，不等于应用总内存；估算辅助函数见[结果参考](Data-Types-and-Results.md#估算辅助函数)。
 
-需要取消执行时，按[取消与超时](Cancellation-and-Timeouts.md)安排计时器和原操作的收尾，不要依赖这个选项名称推断已发生取消。
+需要驱动拥有取消计时器时，使用 `mysqlFeatures.deadlines` 和 `MySqlDeadlineOptions`；`statementTimeoutMs` 仍不会启动计时器。详见[取消与超时](Cancellation-and-Timeouts.md)。
+
+## 高级执行选项
+
+| 类型 | 主要默认值 | 用途 |
+| --- | --- | --- |
+| `MySqlDeadlineOptions` | `timeoutMs = 0`、`cancellationGraceMs = 2000` | 文本或预处理执行的截止时间与取消收敛 |
+| `MySqlCursorOptions` | `fetchRows = 200`、`maxBufferedBytes = 33554432` | 只读服务端游标批次和累计结果预算 |
+| `MySqlBatchOptions` | `maxItems = 1000`、`maxBufferedBytes = 33554432` | 预处理批处理 |
+| `MySqlInsertRowsOptions` | 继承 batch，并设 `maxPacketBytes = 16777216` | 受限多行 INSERT 分组 |
+| `MySqlLongDataOptions` | `chunkBytes = 65536`、`maxTotalBytes = 67108864`、`uploadTimeoutMs = 30000` | 预处理长文本/二进制参数 |
+| `MySqlTransactionOptions` | 默认隔离、`readOnly` 未设置、`consistentSnapshot = false` | 回调事务属性 |
+
+这些类型都提供 `validate()` 和 `clone()`，并在内部复制嵌套的 `QueryOptions`。各能力的所有权、失败与重试边界见[预处理与高级执行](Advanced-Execution.md)、[事务](Transactions.md)和[取消与超时](Cancellation-and-Timeouts.md)。
