@@ -2,62 +2,63 @@
 
 事务使用专用连接，并在这条连接上串行执行。表也必须支持事务；驱动提供提交和回滚接口，不会改变 MySQL 本身的事务语义。
 
-MySQL 1.0.2 保留 `setAutocommit`、`commit`、`rollback`，也通过 `features.transactions` 提供 `begin`、`commit`、`rollback` 和会话状态。方法签名见[公共接口](API-Reference.md)。
+MySQL 1.1.0 保留 `setAutocommit`、`commit`、`rollback`，通过 `features.transactions` 提供通用事务控制，也通过 `mysqlFeatures.transactions` 提供带隔离级别、只读、consistent snapshot 和保存点的回调事务。方法签名见[公共接口](API-Reference.md)。
 
 ## 提交与回滚示例
 
-这个示例在连接前关闭自动提交。成功时提交，失败时尝试回滚，最后总会尝试关闭；三条路径的错误分别保留。将代码保存为 `src\main\ets\sample\TransactionExample.ets`，由 Worker 调用。
+这个示例使用 1.1.0 的回调事务。入口要求连接 Ready、会话事务状态已知、没有已有事务，并且 `autocommit = true`；不要把旧手动事务示例中 `autocommit = false` 的配置直接传入。驱动在回调成功后提交，在同步且可回滚的失败后尝试回滚；连接关闭错误仍单独保留。将代码保存为 `src\main\ets\sample\TransactionExample.ets`，由 Worker 调用。
 
 ```typescript
-import { ConnectionConfig, ConnectionState, MySqlDriverFactory } from '@arkdb/mysql';
+import {
+  ArkDbError, ConnectionConfig, MySqlDriverFactory, MySqlSession,
+  MySqlTransactionIsolation, MySqlTransactionOptions, requireMySqlFeatures
+} from '@arkdb/mysql';
 
-export class TransactionFailure extends Error {
-  primaryFailure: Object | null;
-  rollbackFailure: Object | null;
-  cleanupFailure: Object | null;
-  rollbackAttempted: boolean;
+export class TransactionAndCloseFailure extends Error {
+  transactionFailure: Object;
+  closeFailure: Object;
 
-  constructor(primary: Object | null, rollback: Object | null,
-    cleanup: Object | null, attempted: boolean) {
-    super('Transaction or cleanup failed; inspect the retained failures without logging secrets.');
-    this.primaryFailure = primary;
-    this.rollbackFailure = rollback;
-    this.cleanupFailure = cleanup;
-    this.rollbackAttempted = attempted;
+  constructor(transactionFailure: Object, closeFailure: Object) {
+    super('Transaction and connection close both failed.');
+    this.transactionFailure = transactionFailure;
+    this.closeFailure = closeFailure;
   }
 }
 
 export async function runTransaction(config: ConnectionConfig, password: string,
   trustedStatements: string[]): Promise<void> {
-  const options = config.clone();
-  options.autocommit = false;
-  const errors = options.validate();
+  const connectionConfig = config.clone();
+  const errors = connectionConfig.validate();
   if (errors.length > 0) throw errors[0];
-  const connection = new MySqlDriverFactory().createConnection(options, password);
-  let primary: Object | null = null;
-  let rollback: Object | null = null;
-  let cleanup: Object | null = null;
-  let rollbackAttempted = false;
+  const connection = new MySqlDriverFactory().createConnection(connectionConfig, password);
+  let transactionFailure: Object | null = null;
+  let closeFailure: Object | null = null;
   try {
     await connection.connect();
-    for (const sql of trustedStatements) await connection.query(sql);
-    await connection.commit();
-  } catch (error) {
-    primary = error as Object;
-    if (connection.state === ConnectionState.Ready) {
-      rollbackAttempted = true;
-      try { await connection.rollback(); } catch (error) { rollback = error as Object; }
+    const transactions = requireMySqlFeatures(connection).transactions;
+    if (transactions === undefined) {
+      throw ArkDbError.unsupported('Transaction callbacks are unavailable.');
     }
-  } finally {
-    try { await connection.close(); } catch (error) { cleanup = error as Object; }
+    const options = new MySqlTransactionOptions();
+    options.isolation = MySqlTransactionIsolation.ReadCommitted;
+    await transactions.run(options, async (session: MySqlSession): Promise<void> => {
+      await session.savepoint('application_work');
+      for (const sql of trustedStatements) await session.query(sql);
+      await session.releaseSavepoint('application_work');
+    });
+  } catch (error) {
+    transactionFailure = error as Object;
   }
-  if (primary !== null || rollback !== null || cleanup !== null) {
-    throw new TransactionFailure(primary, rollback, cleanup, rollbackAttempted);
+  try { await connection.close(); } catch (error) { closeFailure = error as Object; }
+  if (transactionFailure !== null && closeFailure !== null) {
+    throw new TransactionAndCloseFailure(transactionFailure, closeFailure);
   }
+  if (transactionFailure !== null) throw transactionFailure as Error;
+  if (closeFailure !== null) throw closeFailure as Error;
 }
 ```
 
-`trustedStatements` 只能包含应用拥有的可信 SQL。当前没有参数绑定，不要把这个数组当作用户输入接口。
+`trustedStatements` 只能包含应用拥有的可信 SQL，不要把这个数组当作用户输入接口。事务回调不会暴露根连接的 prepared、batch、named 或嵌套事务执行器；需要绑定不可信行值时，使用回调会话提供的受限 `session.mysqlFeatures.insertRows`。
 
 ## 调用示例
 
@@ -87,13 +88,15 @@ export async function transferSampleBalance(config: ConnectionConfig, password: 
 
 从初始数据首次成功执行后，用新连接查询 `SELECT id, balance FROM arkdb_sample_accounts ORDER BY id`，预期余额分别为 `90`、`110`。这是固定样本的预期，不是运行记录；重复执行会再次转移，不能当作幂等操作。
 
-在隔离测试中验证回滚时，可以将第二条语句改为引用不存在的列，使其产生普通 SQL 错误。函数应抛出 `TransactionFailure`；检查 `rollbackAttempted`、`rollbackFailure`，并另行查询实际余额，不能仅凭抛错就断言已回滚。不要用提交响应丢失来模拟“必定回滚”的场景。
+在隔离测试中验证回滚时，可以将第二条语句改为引用不存在的列，使其产生普通 SQL 错误。函数应抛错；驱动会在会话仍同步且 Ready 时尝试回滚，并保留原始、回滚、取消和清理失败。另行查询实际余额，不能仅凭抛错就断言已回滚。不要用提交响应丢失来模拟“必定回滚”的场景。
 
 教程表会保留在测试数据库中。确认不再需要且确实是本次创建的教程表后，由操作者显式清理，不在示例中自动删除。
 
 ## 查看会话状态
 
-`setAutocommit`、`commit` 和 `rollback` 返回 `DatabaseSessionStatus`。只有 `known` 明确为真时，才使用其中的自动提交和事务标记；查询结果对应检查 `statusKnown`。
+`setAutocommit`、`commit` 和 `rollback` 返回 `DatabaseSessionStatus`。只有 `known` 明确为真时，才使用其中的自动提交和事务标记；查询结果对应检查 `statusKnown`。回调中的 `MySqlSession` 只在事务回调函数尚未 resolve/reject 时有效；回调一结束就会失效，即使外层 `run()` 仍在等待取消清理、提交或回滚。不要保存 session 到回调外，并在回调返回前 `await` 完成所有会话操作。
+
+`MySqlTransactionOptions` 可选择 `ReadCommitted`、`RepeatableRead`、`Serializable`、`ReadUncommitted` 或服务器默认隔离级别，还可设置 `readOnly` 和 `consistentSnapshot`。事务特征在 `START TRANSACTION` 前设置，不改变调用方原有 autocommit 设置。
 
 普通 SQL 错误后，连接可能还开着，但会话状态已失效。需要继续使用时，先确认生命周期和会话状态；不要只根据“没有断线”判断事务仍处于原来的状态。
 

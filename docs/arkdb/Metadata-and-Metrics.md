@@ -1,6 +1,6 @@
 # 元数据与服务器指标
 
-MySQL 1.0.2 的 Provider 借用已经打开的连接，不负责创建、关闭或调度。它们的操作要与这条连接上的其他命令串行执行。
+MySQL 1.1.0 的 Provider 借用已经打开的连接，不负责创建、关闭或调度。它们的操作要与这条连接上的其他命令串行执行。
 
 ## 读取对象和指标
 
@@ -129,4 +129,4 @@ MySQL 指标模型还包括 `MetricGauge`、`MetricCounter`、`ServerProcessInfo
 
 `MAX_METRICS_PROCESS_ROWS`、`MAX_METRICS_REPLICATION_CHANNELS`、`MAX_METRICS_UNSIGNED_64`、`MAX_PROCESS_COMMAND_UTF8_BYTES`、`MAX_PROCESS_STATE_UTF8_BYTES` 和 `MAX_REPLICATION_CHANNEL_NAME_UTF8_BYTES` 定义模型上限，不代表服务器本身的容量。
 
-完整字段在同版 [MySQL 指标定义](https://github.com/OrcaSQL-Workbench/ArkDB/blob/f532d0c37adf4dbba7a1a313679f0024822ed752/mysql/src/main/ets/mysql/metrics/MySqlServerMetrics.ets)中。需要构造这些模型或做通用集成时，再查[公共接口](API-Reference.md)；普通展示优先使用 Provider 返回的数据和可用性状态。
+完整字段在同版 [MySQL 指标定义](https://github.com/OrcaSQL-Workbench/ArkDB/blob/126f786f93416f7d6894d842bf85aa26c7accbe4/mysql/src/main/ets/mysql/features/metrics/MySqlServerMetrics.ets)中。需要构造这些模型或做通用集成时，再查[公共接口](API-Reference.md)；普通展示优先使用 Provider 返回的数据和可用性状态。

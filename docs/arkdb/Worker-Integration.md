@@ -2,7 +2,7 @@
 
 数据库连接由应用自己的 Worker 管理。页面负责输入和展示，Worker 负责连接、执行和关闭。驱动不会创建 Worker，也不会替应用排队并发请求。
 
-这页适用于 MySQL 1.0.2。可以对照[完整 Stage 示例](https://github.com/OrcaSQL-Workbench/ArkDB/tree/f532d0c37adf4dbba7a1a313679f0024822ed752/examples/mysql-client)接入，不必自行设计一套托管客户端接口。
+这页适用于 MySQL 1.1.0。可以对照[完整 Stage 示例](https://github.com/OrcaSQL-Workbench/ArkDB/tree/126f786f93416f7d6894d842bf85aa26c7accbe4/examples/mysql-client)接入，不必自行设计一套托管客户端接口。
 
 ## 注册入口
 
@@ -183,7 +183,7 @@ async function run(request: ConnectionRequest): Promise<void> {
 
 ## 运行完整示例
 
-从与 Release 对应的 [ArkDB 源码](https://github.com/OrcaSQL-Workbench/ArkDB/tree/f532d0c37adf4dbba7a1a313679f0024822ed752)准备示例。构建步骤在[示例 README](https://github.com/OrcaSQL-Workbench/ArkDB/blob/f532d0c37adf4dbba7a1a313679f0024822ed752/examples/mysql-client/README.md)中，包括 HAR 准备和未签名 HAP 构建。
+从与 Release 对应的 [ArkDB 源码](https://github.com/OrcaSQL-Workbench/ArkDB/tree/126f786f93416f7d6894d842bf85aa26c7accbe4)准备示例。构建步骤在[示例 README](https://github.com/OrcaSQL-Workbench/ArkDB/blob/126f786f93416f7d6894d842bf85aa26c7accbe4/examples/mysql-client/README.md)中，包括 HAR 准备和未签名 HAP 构建。
 
 用 DevEco Studio 打开 `examples\mysql-client`，配置自己的本地调试签名，选择兼容的 API-24 tablet/2in1 目标。示例不附带签名身份。
 

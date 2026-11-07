@@ -41,7 +41,7 @@ ArkDB 的接口与支持边界应对照上游公共 `mysql\Index.ets`、包指�
 
 交互运行时基于 Archify 3.0.1 生成文件，原始 HTML 的 SHA-256 为 `b4cc8b69093463ed7a45e51f74108ef0de253a538417cf3fbce66d8a3c984a33`。仓库保留 Archify MIT 和 JetBrains Mono OFL 许可，不依赖本机 Skill 或在线资源来构建。更新运行时需复查 CSP、精确脚本白名单和交互功能；导出的 SVG 仍须清除交互控件。交互页与本站共用主题键，支持跟随系统、浅色、深色及同源页面同步。
 
-当前手册以 MySQL 1.0.2 为准。`tests\fixtures\arkdb-mysql-1.0.2-examples.json` 保存从实际发布 HAR 提取的八个包指南示例，以及 HAR、包指南摘要和源码提交。`test_arkdb_manual.py` 比对手册中的 ArkTS 示例，并检查旧页面、章节链接和站内导航。更新示例时先核对对应发行包，不把仅存在于开发分支的接口写进已发布版本的用法。
+当前手册以 MySQL 1.1.0 为准。`tests\fixtures\arkdb-mysql-1.1.0-examples.json` 保存从实际发布 HAR 提取的八个包指南示例，以及 HAR、包指南摘要和源码提交。`test_arkdb_manual.py` 比对手册中的 ArkTS 示例，并检查旧页面、章节链接和站内导航。更新示例时先核对对应发行包，不把仅存在于开发分支的接口写进已发布版本的用法。
 
 在现有主题页新增的手册自编示例，在代码块前一行使用 Markdown 隐藏引用注释 `[//]: # (arkdb-example: 标识)`，并登记到 `test_arkdb_manual.py` 的页面映射中；它们与上述发行包原文分别检查，不覆盖发行来源 fixture。不要改用 HTML 注释，当前渲染器禁用 HTML，会将其作为文字展示。连接设置、调用参数、共享模块文件名、前置步骤、连接所有权和预期结果必须明确。新增操作示例仍应使用对应已发布 HAR 的公共接口，不能将 Python 文档检查通过说成 ArkTS 编译或 HarmonyOS 实机验证通过。
 

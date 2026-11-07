@@ -1,6 +1,6 @@
 # 错误与日志
 
-MySQL 1.0.2 使用 `ArkDbError` 表达驱动错误。在抛错的线程内捕获和分类，再把必要的脱敏信息传给 UI。版本来源见[兼容性与升级](Compatibility-and-Upgrading.md)。
+MySQL 1.1.0 使用 `ArkDbError` 表达驱动错误。在抛错的线程内捕获和分类，再把必要的脱敏信息传给 UI。版本来源见[兼容性与升级](Compatibility-and-Upgrading.md)。
 
 本页内容：[错误字段](#错误字段)、[错误类别](#错误类别)、[展示错误](#展示错误)、[日志设置](#日志设置)。
 
@@ -36,6 +36,8 @@ MySQL 1.0.2 使用 `ArkDbError` 表达驱动错误。在抛错的线程内捕获
 
 一个普通 SQL 错误不一定关闭连接，但可能使会话状态未知。是否复用要结合状态判断；`Timeout` 本身也不能证明服务器停止执行。
 
+高级执行失败可能以 `MySqlOperationError` 提供 `outcome`、`cleanupErrors` 和可选 `originalCause`。`MySqlExecutionOutcome` 区分 `NotDispatched`、`Completed`、`ServerRejected` 和 `Unknown`；取消或中断仍通过错误类别与最终 outcome 共同表达。只有已证明的结果才能用于重试判断。`MySqlBatchError` 还保留已完成结果、失败索引和失败结果。
+
 ## 展示错误
 
 这个函数只生成展示文字，不负责吞掉错误、重试操作或判断连接可复用。保存为 `src\main\ets\sample\ErrorFormatting.ets`：
@@ -54,7 +56,7 @@ export function publicErrorText(error: Object): string {
 }
 ```
 
-服务器消息可能含 SQL、用户名和业务数据，不要直接记录或放进跨线程 DTO。操作错误、回滚错误、关闭错误应分别保存；完整做法见[事务示例](Transactions.md#提交与回滚示例)。
+服务器消息可能含 SQL、用户名和业务数据，不要直接记录或放进跨线程 DTO。操作错误、回滚/取消错误和关闭错误应分别保存；完整做法见[事务示例](Transactions.md#提交与回滚示例)。
 
 ## 展示连接与清理错误
 
@@ -77,7 +79,7 @@ export function connectionErrorText(error: Object): string {
 }
 ```
 
-调用方式见 [Worker 示例](Worker-Integration.md#连接检查的请求与响应示例)。操作与关闭同时失败时，两项都应出现在失败响应中；函数不展示原始 `message`，也不把错误变成成功。事务的回滚错误仍应按 `TransactionFailure` 的独立字段处理，不套用这个连接专用函数。
+调用方式见 [Worker 示例](Worker-Integration.md#连接检查的请求与响应示例)。操作与关闭同时失败时，两项都应出现在失败响应中；函数不展示原始 `message`，也不把错误变成成功。事务回调和连接关闭同时失败时使用 `TransactionAndCloseFailure` 的独立字段，不套用这个连接专用函数。
 
 ## 日志设置
 

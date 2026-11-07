@@ -1,6 +1,6 @@
 # 公共接口与错误处理
 
-这页按 MySQL 1.0.2 的公共入口整理。所有导入都来自 `@arkdb/mysql`，不从包内目录导入，也不要求消费应用导入 `@arkdb/core`。
+这页按 MySQL 1.1.0 的公共入口整理。所有导入都来自 `@arkdb/mysql`，不从包内目录导入，也不要求消费应用导入 `@arkdb/core`。
 
 按需查阅：[工厂与连接](#工厂与连接)、[可选能力](#可选能力)、[元数据与服务器指标](#元数据与服务器指标)、[类型化错误](#类型化错误)、[日志](#日志)、[其他导出](#其他导出)。版本来源见[兼容性与升级](Compatibility-and-Upgrading.md)。
 
@@ -29,6 +29,7 @@
 | `serverInfo` | 只读 `ServerInfo` |
 | `sessionStatus` | 只读 `DatabaseSessionStatus` |
 | `features` | 可选的 `DbConnectionFeatures` |
+| `mysqlFeatures` | 内置连接上的 `MySqlConnectionFeatures`；旧自定义连接可不提供 |
 
 同一连接的操作由调用方串行化。失败不代表可以安全重试；会话标记只在明确已知时使用。`ConnectionState` 包括 `Idle`、`Connecting`、`Authenticating`、`Ready`、`Querying`、`Closed` 和 `Error`。
 
@@ -58,6 +59,31 @@ MySQL 句柄式 `DbExecutionController.cancel(connectionHandle: string)` 返回 
 
 `DatabaseContext`、`DatabaseContextPolicy` 和 `ContextChangeMode` 描述上下文变更规则。不同驱动可以要求重连或拒绝某种变更，不需要模拟 MySQL 的 `USE`。
 
+### MySQL 专属可选能力
+
+使用 `requireMySqlFeatures(connection)` 取得 MySQL 能力容器。容器缺失时抛出 `Unsupported`；取得容器后仍要分别检查成员。
+
+| `mysqlFeatures` 成员 | 主要接口 |
+| --- | --- |
+| `prepared` | `prepare`、类型化 `execute`、`executeStream` |
+| `named` | 按当前 SQL mode 解析 `:name` 并进行类型化绑定 |
+| `batch` | 串行预处理批处理，保留部分完成结果 |
+| `insertRows` | 受限多行 INSERT，不接受原始 SQL 后缀 |
+| `cursors` | 只读服务端游标 `open`、`fetch`、`close` |
+| `longData` | 在显式 statement 上上传长文本或二进制参数 |
+| `procedures` | 二进制存储过程调用及 OUT/INOUT 结果 |
+| `deadlines` | 带取消收敛的缓冲文本/预处理截止时间 |
+| `session` | `COM_RESET_CONNECTION` 会话重置 |
+| `transactions` | 带隔离级别、只读、snapshot 和保存点的回调事务 |
+
+接口、默认值和所有权边界见[预处理与高级执行](Advanced-Execution.md)、[事务](Transactions.md)和[取消与超时](Cancellation-and-Timeouts.md)。
+
+### 执行观察
+
+`MySqlDriverFactory.create(new MySqlConnectionOptions(config, password, extensions))` 可以通过 `MySqlConnectionExtensions.executionObserver` 接收隐私安全的同步生命周期事件。事件只包含类型、连接内 serial、generation、命令类别、单调时刻和耗时，不包含 SQL、参数、凭据、主机/账号/数据库标识、结果或错误内容。
+
+观察只适用于带 extensions 的泛型工厂创建路径。`createConnection(config, password)`、`createMySqlConnection()`、直接构造和驱动内部控制连接保持无观察者。观察者抛错时会被移除，当前数据库操作不会因此失败或重放。
+
 ## 元数据与服务器指标
 
 方法签名、结果模型和示例集中在[元数据与服务器指标](Metadata-and-Metrics.md)。
@@ -85,8 +111,12 @@ MySQL 句柄式 `DbExecutionController.cancel(connectionHandle: string)` 返回 
 | `ServerInfo`、`MySqlServerInfo`、`ServerFamily`、`MySqlColumnDef`、`MySqlQueryResult` | [列与服务器信息](Data-Types-and-Results.md#列与服务器信息) |
 | `QueryResultSink`、`CoreQueryResultSink`、`QueryTruncation` | [流式读取](Streaming.md)和[结果参考](Data-Types-and-Results.md#流式事件与汇总) |
 | `CancellationOutcome`、`ConnectionReuse`、`QueryCancellationResult` | [取消结果](Cancellation-and-Timeouts.md#取消结果与连接复用) |
+| `MySqlParameter`、`MySqlParameterType`、prepared/named/cursor/batch/insert/long-data/procedure 类型 | [预处理与高级执行](Advanced-Execution.md) |
+| `MySqlTransactionIsolation`、`MySqlTransactionOptions`、`MySqlSession` | [事务](Transactions.md) |
+| `MySqlDeadlineOptions`、`MySqlExecutionOutcome`、`MySqlOperationError` | [取消与超时](Cancellation-and-Timeouts.md)和[错误处理](Errors-and-Logging.md) |
+| `MySqlConnectionOptions`、`MySqlConnectionExtensions`、`MySqlExecutionObserver` | 本页[执行观察](#执行观察) |
 | 元数据、通用指标与 MySQL 指标类型、`ServerMetricsModel` 及指标上限常量 | [元数据与服务器指标](Metadata-and-Metrics.md) |
 
 `ConnectionDeadline`、`SystemConnectionTimerPort`、`ConnectionTimerPort` 和 `connectionCleanupError` 是连接截止时间与清理的底层辅助接口；`estimateSqlValueBytes`、`estimateSqlRowBytes`、`estimateSqlRowsBytes` 是结果预算估算辅助函数。它们不提供应用层连接池、语句计时器或自动 Worker 管理。一般应用不需要直接使用这些辅助接口。
 
-完整导出可对照同版 [公共入口](https://github.com/OrcaSQL-Workbench/ArkDB/blob/f532d0c37adf4dbba7a1a313679f0024822ed752/mysql/Index.ets)；辅助接口的实现和扩展约定在 [core 公共入口](https://github.com/OrcaSQL-Workbench/ArkDB/blob/f532d0c37adf4dbba7a1a313679f0024822ed752/core/Index.ets)与[共享契约说明](https://github.com/OrcaSQL-Workbench/ArkDB/blob/f532d0c37adf4dbba7a1a313679f0024822ed752/docs/driver-contracts.md)中。
+完整导出可对照同版 [公共入口](https://github.com/OrcaSQL-Workbench/ArkDB/blob/126f786f93416f7d6894d842bf85aa26c7accbe4/mysql/Index.ets)；辅助接口的实现和扩展约定在 [core 公共入口](https://github.com/OrcaSQL-Workbench/ArkDB/blob/126f786f93416f7d6894d842bf85aa26c7accbe4/core/Index.ets)与[共享契约说明](https://github.com/OrcaSQL-Workbench/ArkDB/blob/126f786f93416f7d6894d842bf85aa26c7accbe4/docs/driver-contracts.md)中。

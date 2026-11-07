@@ -403,8 +403,8 @@ svg[data-theme="dark"] { --bg: #020617; --grid: #1e293b; --canvas-dot: rgba(148,
 rect.c-bg-rect { fill: var(--bg); }
 </style><rect x="0" y="0" width="1108" height="1620" class="c-bg-rect"/>
         <title id="archify-diagram-title">ArkDB 总览架构</title>
-        <desc id="archify-diagram-description">宿主应用通过公共工厂创建 MySqlConnection，由命令与结果处理、PacketChannel 和 TcpTransport 连接远端 MySQL。core 在同一 HAR 内提供共享契约与基础设施。握手与认证走协议通道，元数据与指标复用查询能力；取消通过独立控制会话发送 KILL QUERY，不共用正在执行查询的 socket。Worker 由宿主选择和管理。</desc>
-        <metadata>{"repository":"https://github.com/OrcaSQL-Workbench/ArkDB","revision":"60a3eea6caac4e180b70fe677dbcbf7a22cc6e55","diagram_type":"architecture"}</metadata>
+        <desc id="archify-diagram-description">宿主应用通过公共工厂创建 MySqlConnection 外观；连接生命周期和命令门统一管理物理会话、generic/MySQL 可选能力、文本与预处理结果流。PacketChannel 和 TcpTransport 连接远端 MySQL，core 在同一 HAR 内提供共享契约、预算与错误基础设施。握手与认证走协议通道，元数据与指标复用连接能力；取消通过独立控制会话发送 KILL QUERY，不共用正在执行查询的 socket。Worker 由宿主选择和管理。</desc>
+        <metadata>{"repository":"https://github.com/OrcaSQL-Workbench/ArkDB","revision":"126f786f93416f7d6894d842bf85aa26c7accbe4","diagram_type":"architecture"}</metadata>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -506,27 +506,27 @@ rect.c-bg-rect { fill: var(--bg); }
         <text x="500" y="314" class="t-backend" font-size="7" text-anchor="middle">@arkdb/mysql</text>
         </g>
 
-        <g id="node-connection" data-node-id="connection" data-node-label="MySqlConnection" data-node-kind="backend" data-node-sublabel="状态、查询、事务与会话编排" data-node-tag="mysql" data-node-context="单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码">
-          <title>MySqlConnection · 状态、查询、事务与会话编排 · 单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码 · mysql</title>
+        <g id="node-connection" data-node-id="connection" data-node-label="连接外观与生命周期" data-node-kind="backend" data-node-sublabel="MySqlConnection / Lifecycle" data-node-tag="mysql" data-node-context="单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码">
+          <title>连接外观与生命周期 · MySqlConnection / Lifecycle · 单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码 · mysql</title>
           <rect x="370" y="445" width="260" height="92" rx="6" class="c-mask"/>
           <rect x="370" y="445" width="260" height="92" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(376 451) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" x="500" y="489" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">MySqlConnection</text>
-        <text x="500" y="505" class="t-muted" font-size="9" text-anchor="middle">状态、查询、事务与会话编排</text>
+          <text data-node-label="" x="500" y="489" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">连接外观与生命周期</text>
+        <text x="500" y="505" class="t-muted" font-size="9" text-anchor="middle">MySqlConnection / Lifecycle</text>
         <text x="500" y="529" class="t-backend" font-size="7" text-anchor="middle">mysql</text>
         </g>
 
-        <g id="node-core" data-node-id="core" data-node-label="共享核心 core" data-node-kind="backend" data-node-sublabel="契约、错误、连接时限与日志" data-node-tag="共享源码；非额外安装包" data-node-context="单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码">
-          <title>共享核心 core · 契约、错误、连接时限与日志 · 单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码 · 共享源码；非额外安装包</title>
+        <g id="node-core" data-node-id="core" data-node-label="共享核心 core" data-node-kind="backend" data-node-sublabel="契约、预算、错误与失败组合" data-node-tag="共享源码；非额外安装包" data-node-context="单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码">
+          <title>共享核心 core · 契约、预算、错误与失败组合 · 单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码 · 共享源码；非额外安装包</title>
           <rect x="40" y="445" width="230" height="92" rx="6" class="c-mask"/>
           <rect x="40" y="445" width="230" height="92" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(46 451) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" x="155" y="489" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">共享核心 core</text>
-        <text x="155" y="505" class="t-muted" font-size="9" text-anchor="middle">契约、错误、连接时限与日志</text>
+        <text x="155" y="505" class="t-muted" font-size="9" text-anchor="middle">契约、预算、错误与失败组合</text>
         <text x="155" y="529" class="t-backend" font-size="7" text-anchor="middle">共享源码；非额外安装包</text>
         </g>
 
@@ -555,27 +555,27 @@ rect.c-bg-rect { fill: var(--bg); }
         <text x="155" y="839" class="t-security" font-size="7" text-anchor="middle">mysql / auth</text>
         </g>
 
-        <g id="node-commands" data-node-id="commands" data-node-label="命令与结果处理" data-node-kind="backend" data-node-sublabel="COM_QUERY / 分块 / 类型映射" data-node-tag="mysql / command · value" data-node-context="单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码">
-          <title>命令与结果处理 · COM_QUERY / 分块 / 类型映射 · 单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码 · mysql / command · value</title>
+        <g id="node-commands" data-node-id="commands" data-node-label="命令门与结果处理" data-node-kind="backend" data-node-sublabel="text / prepared / cursor / budgets" data-node-tag="mysql / execution · command · features" data-node-context="单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码">
+          <title>命令门与结果处理 · text / prepared / cursor / budgets · 单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码 · mysql / execution · command · features</title>
           <rect x="370" y="755" width="260" height="92" rx="6" class="c-mask"/>
           <rect x="370" y="755" width="260" height="92" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(376 761) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" x="500" y="799" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">命令与结果处理</text>
-        <text x="500" y="815" class="t-muted" font-size="9" text-anchor="middle">COM_QUERY / 分块 / 类型映射</text>
-        <text x="500" y="839" class="t-backend" font-size="7" text-anchor="middle">mysql / command · value</text>
+          <text data-node-label="" x="500" y="799" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">命令门与结果处理</text>
+        <text x="500" y="815" class="t-muted" font-size="9" text-anchor="middle">text / prepared / cursor / budgets</text>
+        <text x="500" y="839" class="t-backend" font-size="7" text-anchor="middle">mysql / execution · command · features</text>
         </g>
 
-        <g id="node-control-session" data-node-id="control-session" data-node-label="取消控制会话" data-node-kind="backend" data-node-sublabel="独立 MySqlConnection" data-node-tag="MySqlExecutionController" data-node-context="单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码">
-          <title>取消控制会话 · 独立 MySqlConnection · 单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码 · MySqlExecutionController</title>
+        <g id="node-control-session" data-node-id="control-session" data-node-label="取消控制会话" data-node-kind="backend" data-node-sublabel="独立控制连接 / KILL QUERY" data-node-tag="MySqlExecutionController" data-node-context="单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码">
+          <title>取消控制会话 · 独立控制连接 / KILL QUERY · 单一 @arkdb/mysql HAR：mysql 实现 + core 共享源码 · MySqlExecutionController</title>
           <rect x="790" y="755" width="250" height="92" rx="6" class="c-mask"/>
           <rect x="790" y="755" width="250" height="92" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(796 761) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" x="915" y="799" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">取消控制会话</text>
-        <text x="915" y="815" class="t-muted" font-size="9" text-anchor="middle">独立 MySqlConnection</text>
+        <text x="915" y="815" class="t-muted" font-size="9" text-anchor="middle">独立控制连接 / KILL QUERY</text>
         <text x="915" y="839" class="t-backend" font-size="7" text-anchor="middle">MySqlExecutionController</text>
         </g>
 

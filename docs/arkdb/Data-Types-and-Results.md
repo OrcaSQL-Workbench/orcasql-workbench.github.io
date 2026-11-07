@@ -1,6 +1,6 @@
 # 数据类型与结果
 
-这页说明 MySQL 1.0.2 的结果字段，以及同一个 HAR 中可移植契约的区别。普通读取示例见[查询指南](Queries.md)，版本来源见[兼容性与升级](Compatibility-and-Upgrading.md)。
+这页说明 MySQL 1.1.0 的结果字段，以及同一个 HAR 中可移植契约的区别。普通读取示例见[查询指南](Queries.md)，版本来源见[兼容性与升级](Compatibility-and-Upgrading.md)。
 
 本页内容：[SqlValue](#sqlvalue)、[列与服务器信息](#列与服务器信息)、[QueryResult](#queryresult)、[流式事件与汇总](#流式事件与汇总)、[MySQL 与 Core 类型](#mysql-类型与-core-类型)。
 
@@ -68,7 +68,8 @@ MySQL 的 `ColumnDef` 是 `MySqlColumnDef` 的兼容名称，还保留 `table`�
 | --- | --- |
 | `columns` | 列定义 |
 | `rows` | 与列定义对齐的二维值数组 |
-| `affectedRows` | 受影响行数 |
+| `affectedRows` | 保留兼容性的数值受影响行数，超出安全整数范围时可能丢失精度 |
+| `affectedRowsExact` | 服务器报告 OK 受影响行数时的可选精确 `bigint` |
 | `lastInsertId`、`warningCount` | MySQL 兼容类型中的插入标识与警告数 |
 | `loadedBytes`、`executionTimeMs` | 驱动估算的已加载字节数和执行时间 |
 | `truncated`、`truncationReason` | 是否截断及原因 |
@@ -76,6 +77,8 @@ MySQL 的 `ColumnDef` 是 `MySqlColumnDef` 的兼容名称，还保留 `table`�
 | `statusKnown`、`autocommit`、`inTransaction` | 会话状态及其是否已知 |
 
 先检查截断和 `statusKnown`。已加载的行不一定是完整结果，`autocommit` 或 `inTransaction` 的默认值也不能证明服务器当前状态。
+
+`mapMySqlRows(result, mapper)` 按位置投影缓冲结果，不更改原始值类型。mapper 收到原始行、列数组和零基行号；重复列名仍按位置区分，异常按原身份传播。
 
 ## 流式事件与汇总
 
@@ -109,4 +112,4 @@ MySQL 的插入标识和警告数保留零默认值；可移植流式汇总可�
 
 `estimateSqlValueBytes(value)`、`estimateSqlRowBytes(row)` 和 `estimateSqlRowsBytes(rows)` 返回预算用的字节估算。它们不测量运行时对象占用，也不是把结果序列化后的真实大小。
 
-完整字段可对照同版[结果契约](https://github.com/OrcaSQL-Workbench/ArkDB/blob/f532d0c37adf4dbba7a1a313679f0024822ed752/core/src/main/ets/model/QueryStream.ets)和 [MySQL 适配类型](https://github.com/OrcaSQL-Workbench/ArkDB/blob/f532d0c37adf4dbba7a1a313679f0024822ed752/mysql/src/main/ets/mysql/model/MySqlQueryStream.ets)。
+完整字段可对照同版[结果契约](https://github.com/OrcaSQL-Workbench/ArkDB/blob/126f786f93416f7d6894d842bf85aa26c7accbe4/core/src/main/ets/model/QueryStream.ets)和 [MySQL 适配类型](https://github.com/OrcaSQL-Workbench/ArkDB/blob/126f786f93416f7d6894d842bf85aa26c7accbe4/mysql/src/main/ets/mysql/model/MySqlQueryStream.ets)。

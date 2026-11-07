@@ -6,6 +6,7 @@
     { "source": "Worker-Integration.md", "slug": "worker-integration", "title": "Worker 集成", "section": "开始使用" },
     { "source": "Connections.md", "slug": "connections", "title": "连接配置与 TLS", "section": "MySQL 使用指南" },
     { "source": "Queries.md", "slug": "queries", "title": "查询、结果与流式读取", "section": "MySQL 使用指南" },
+    { "source": "Advanced-Execution.md", "slug": "advanced-execution", "title": "预处理与高级执行", "section": "MySQL 使用指南" },
     { "source": "Streaming.md", "slug": "streaming", "title": "有界流式读取", "section": "MySQL 使用指南" },
     { "source": "Transactions.md", "slug": "transactions", "title": "事务", "section": "MySQL 使用指南" },
     { "source": "Cancellation-and-Timeouts.md", "slug": "cancellation-and-timeouts", "title": "取消与超时", "section": "MySQL 使用指南" },
