@@ -94,7 +94,7 @@ export function configureOptionalSession(config: ConnectionConfig): void {
 
 查询成功时，`result.columns[0]` 描述名为 `version` 的列，`result.rows[0][0]` 是服务器版本值。读取其他类型和多个结果集的方法见[查询指南](Queries.md)。
 
-`selectBoundValue()` 展示类型化 UInt64 参数和安全标识符引用；`configureOptionalSession()` 展示连接建立时应用时区和 SQL mode。调用这些辅助函数前先完成连接，更多能力与边界见[预处理与高级执行](Advanced-Execution.md)。
+`configureOptionalSession(config)` 必须在把配置交给工厂创建连接前调用，因为连接构造时会快照配置。`selectBoundValue()` 只能在 `connect()` 完成后调用；它展示类型化 UInt64 参数和安全标识符引用。更多能力与边界见[预处理与高级执行](Advanced-Execution.md)。
 
 请使用与证书匹配的服务器名称。示例选择 `VERIFY_IDENTITY`，同时验证证书链和主机名；需要自定义 CA 时看 [TLS 配置](Connections.md#自定义-ca-与客户端证书)。密码单独传给工厂，不放进 `ConnectionConfig` 或日志。
 

@@ -106,6 +106,26 @@ class ArkDbManualTests(unittest.TestCase):
         self.assertIn("1 | banana | 200", queries)
         self.assertIn("不是实机运行记录", queries)
 
+    def test_release_lifecycle_boundaries_are_explicit(self):
+        advanced = self.documentation.source.joinpath(
+            "Advanced-Execution.md").read_text(encoding="utf-8")
+        self.assertIn("`done` 只表示游标已经结束并释放连接所有权", advanced)
+        self.assertIn("不证明服务器结果已经完整读完", advanced)
+        self.assertIn("累计 `maxRows` 或 `maxResultBytes` 恰好用尽", advanced)
+
+        connections = self.documentation.source.joinpath(
+            "Connections.md").read_text(encoding="utf-8")
+        self.assertIn("明确拒绝命令（包括 `Unsupported`）", connections)
+        self.assertIn("连接保持原 generation 和未重置的会话状态", connections)
+        self.assertIn("需要重置保证的调用方", connections)
+
+        getting_started = self.documentation.source.joinpath(
+            "Getting-Started.md").read_text(encoding="utf-8")
+        self.assertIn("`configureOptionalSession(config)` 必须在把配置交给工厂创建连接前调用",
+                      getting_started)
+        self.assertIn("`selectBoundValue()` 只能在 `connect()` 完成后调用",
+                      getting_started)
+
     def test_old_page_routes_titles_and_heading_links_remain_available(self):
         legacy = json.loads((FIXTURES / "arkdb-legacy-routes.json").read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory() as temporary:

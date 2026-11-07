@@ -148,9 +148,11 @@ export function configureVerifiedTls(config: ConnectionConfig, caPemPath: string
 
 `ConnectionConfig.multipleStatements` 和 `preparedCacheSize` 也在构造连接时快照。前者默认关闭，只用于完全可信的文本脚本；后者默认关闭，为一次性预处理执行启用连接私有 LRU。详细边界见[配置参考](Configuration-Reference.md)和[预处理与高级执行](Advanced-Execution.md)。
 
-内置连接的 `mysqlFeatures.session.reset()` 发送 `COM_RESET_CONNECTION`，随后恢复字符集、默认数据库、自动提交和配置的会话值，并核对当前会话指纹。成功会推进物理会话 generation，使显式 statement、游标和私有缓存的旧所有权失效。服务器不支持、响应不确定或重置后状态不匹配时，驱动关闭连接而不是回退到重连或继续复用。
+内置连接的 `mysqlFeatures.session.reset()` 发送 `COM_RESET_CONNECTION`，随后恢复字符集、默认数据库、自动提交和配置的会话值，并核对当前会话指纹。成功会推进物理会话 generation，使显式 statement、游标和私有缓存的旧所有权失效。
 
-会话重置不是连接池。应用如果自行实现租约，仍要在重置或归还前关闭游标和 statement，并把重置失败的连接销毁。
+服务器在接受重置前明确拒绝命令（包括 `Unsupported`）时，方法抛错，但连接保持原 generation 和未重置的会话状态，不会自动关闭。需要重置保证的调用方（例如连接池租约）必须自行关闭或销毁这条被拒绝的连接，不能把它当作已清理连接归还。响应不确定，或者服务器接受重置后重新初始化、指纹核对失败时，驱动才会推进 generation 并退役连接；不会回退到重连或继续复用。
+
+会话重置不是连接池。应用如果自行实现租约，仍要在重置或归还前关闭游标和 statement，并按上述结果决定是否销毁连接。
 
 ## 会话生命周期
 

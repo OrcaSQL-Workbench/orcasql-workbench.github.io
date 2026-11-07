@@ -38,7 +38,9 @@ MySQL 1.1.0 把数据库特有的高级执行能力放在可选的 `mysqlFeature
 
 `mysqlFeatures.cursors.open(sql, parameters, options?)` 使用专用预处理 statement 请求只读服务端游标。`MySqlCursorOptions.fetchRows` 默认 200，范围 `1..10000`；`maxBufferedBytes` 默认 32 MiB。继承的 `maxRows` 和 `maxResultBytes` 在全部 FETCH 调用之间累计。
 
-返回的 `MySqlCursor` 提供执行时列信息、`done`、`fetch()` 和幂等 `close()`。游标从 PREPARE/EXECUTE 到最终 FETCH 或显式关闭期间持续占用连接，不能穿插查询、ping、会话重置或把连接交还连接池。短批次不等于结束；只有服务器的最后一行状态才结束游标。
+返回的 `MySqlCursor` 提供执行时列信息、`done`、`fetch()` 和幂等 `close()`。游标从 PREPARE/EXECUTE 到结束期间持续占用连接，不能穿插查询、ping、会话重置或把连接交还连接池。短批次不等于结束；只有服务器的最后一行状态才能证明服务器结果已经耗尽。
+
+`done` 只表示游标已经结束并释放连接所有权，不证明服务器结果已经完整读完。除了服务器报告最后一行，累计 `maxRows` 或 `maxResultBytes` 恰好用尽以及显式 `close()` 也会结束游标；预算结束时，本次允许的行会返回，但仍可能有未读取的服务器行。
 
 服务器未建立游标而返回普通缓冲结果时，驱动不会静默退回一次性读取。无法确认同步、响应损坏或预算清理失败会使物理连接退役。
 
