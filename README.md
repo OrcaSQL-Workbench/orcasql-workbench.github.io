@@ -1,6 +1,6 @@
 # OrcaSQL Workbench 文档与支持
 
-这里维护 OrcaSQL Workbench 的用户文档、ArkDB 开发者手册和官方网站。Workbench 目前支持 **MySQL**；独立的 ArkDB 驱动目前提供 **MySQL 工程预览**。
+这里维护 OrcaSQL Workbench 的用户文档、ArkDB 开发者手册和官方网站。Workbench 和 `@arkdb/mysql` 驱动均提供 MySQL 接入能力。
 
 ## 文档与链接
 

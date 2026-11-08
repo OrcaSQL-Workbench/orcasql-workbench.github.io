@@ -81,5 +81,32 @@
       "区分验证层次",
       "本机构建github-release-分发"
     ]
+  },
+  {
+    "source": "Architecture.md",
+    "slug": "architecture",
+    "title": "总览架构与源码导读",
+    "anchors": [
+      "总览架构与源码导读",
+      "总览图",
+      "模块分工与源码入口",
+      "建立连接时发生什么",
+      "查询与结果怎样流动",
+      "为什么取消需要另一条连接",
+      "源码分层不等于安装依赖"
+    ]
+  },
+  {
+    "source": "Compatibility-and-Upgrading.md",
+    "slug": "compatibility-and-upgrading",
+    "title": "兼容性与升级",
+    "anchors": [
+      "兼容性与升级",
+      "版本和平台",
+      "支持范围",
+      "升级-har",
+      "接口兼容",
+      "验证范围"
+    ]
   }
 ]

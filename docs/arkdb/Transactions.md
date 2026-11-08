@@ -2,11 +2,13 @@
 
 事务使用专用连接，并在这条连接上串行执行。表也必须支持事务；驱动提供提交和回滚接口，不会改变 MySQL 本身的事务语义。
 
-MySQL 1.1.0 保留 `setAutocommit`、`commit`、`rollback`，通过 `features.transactions` 提供通用事务控制，也通过 `mysqlFeatures.transactions` 提供带隔离级别、只读、consistent snapshot 和保存点的回调事务。方法签名见[公共接口](API-Reference.md)。
+连接提供 `setAutocommit`、`commit` 和 `rollback`；`mysqlFeatures.transactions` 还提供带隔离级别、只读设置、一致性快照和保存点的回调事务。方法签名见[公共接口](API-Reference.md)。
+
+需要同时了解事务、查询取消和语句超时的关系时，可先看[事务、取消与超时](Transactions-and-Cancellation.md)。
 
 ## 提交与回滚示例
 
-这个示例使用 1.1.0 的回调事务。入口要求连接 Ready、会话事务状态已知、没有已有事务，并且 `autocommit = true`；不要把旧手动事务示例中 `autocommit = false` 的配置直接传入。驱动在回调成功后提交，在同步且可回滚的失败后尝试回滚；连接关闭错误仍单独保留。将代码保存为 `src\main\ets\sample\TransactionExample.ets`，由 Worker 调用。
+下面的示例使用回调事务。调用前，连接必须处于 `Ready`，会话状态必须已知，不能已经位于事务中，并且 `autocommit` 必须为 `true`。回调成功时提交；回调失败时，驱动会在连接状态允许的情况下尝试回滚。将代码保存为 `src\main\ets\sample\TransactionExample.ets`，由 Worker 调用。
 
 ```typescript
 import {
@@ -58,7 +60,7 @@ export async function runTransaction(config: ConnectionConfig, password: string,
 }
 ```
 
-`trustedStatements` 只能包含应用拥有的可信 SQL，不要把这个数组当作用户输入接口。事务回调不会暴露根连接的 prepared、batch、named 或嵌套事务执行器；需要绑定不可信行值时，使用回调会话提供的受限 `session.mysqlFeatures.insertRows`。
+`trustedStatements` 只能包含应用控制的 SQL，不要把用户输入直接放入该数组。事务回调不提供根连接上的预处理、批处理、命名参数或嵌套事务入口；需要绑定外部行值时，使用回调会话提供的 `session.mysqlFeatures.insertRows`。
 
 ## 调用示例
 
@@ -86,7 +88,7 @@ export async function transferSampleBalance(config: ConnectionConfig, password: 
 }
 ```
 
-从初始数据首次成功执行后，用新连接查询 `SELECT id, balance FROM arkdb_sample_accounts ORDER BY id`，预期余额分别为 `90`、`110`。这是固定样本的预期，不是运行记录；重复执行会再次转移，不能当作幂等操作。
+从初始数据首次成功执行后，用新连接查询 `SELECT id, balance FROM arkdb_sample_accounts ORDER BY id`，余额应分别为 `90`、`110`。重复执行会再次转移，不要把该示例当作幂等操作。
 
 在隔离测试中验证回滚时，可以将第二条语句改为引用不存在的列，使其产生普通 SQL 错误。函数应抛错；驱动会在会话仍同步且 Ready 时尝试回滚，并保留原始、回滚、取消和清理失败。另行查询实际余额，不能仅凭抛错就断言已回滚。不要用提交响应丢失来模拟“必定回滚”的场景。
 
@@ -94,7 +96,7 @@ export async function transferSampleBalance(config: ConnectionConfig, password: 
 
 ## 查看会话状态
 
-`setAutocommit`、`commit` 和 `rollback` 返回 `DatabaseSessionStatus`。只有 `known` 明确为真时，才使用其中的自动提交和事务标记；查询结果对应检查 `statusKnown`。回调中的 `MySqlSession` 只在事务回调函数尚未 resolve/reject 时有效；回调一结束就会失效，即使外层 `run()` 仍在等待取消清理、提交或回滚。不要保存 session 到回调外，并在回调返回前 `await` 完成所有会话操作。
+`setAutocommit`、`commit` 和 `rollback` 返回 `DatabaseSessionStatus`。只有 `known` 为 `true` 时，才能使用其中的自动提交和事务标记；查询结果对应检查 `statusKnown`。`MySqlSession` 只在事务回调执行期间有效。不要把它保存到回调外，并在回调返回前 `await` 完成所有会话操作。
 
 `MySqlTransactionOptions` 可选择 `ReadCommitted`、`RepeatableRead`、`Serializable`、`ReadUncommitted` 或服务器默认隔离级别，还可设置 `readOnly` 和 `consistentSnapshot`。事务特征在 `START TRANSACTION` 前设置，不改变调用方原有 autocommit 设置。
 

@@ -1,8 +1,8 @@
 # ArkDB 开发者手册
 
-ArkDB 是供 HarmonyOS 应用使用的原生 ArkTS 数据库驱动。把驱动 HAR 加入项目后，就可以在应用里连接 MySQL，不需要安装 OrcaSQL Workbench，也不需要 Node.js、WebView 或原生 MySQL 客户端。
+ArkDB 是面向 HarmonyOS 应用的原生 ArkTS 数据库驱动。将 `@arkdb/mysql` HAR 加入项目后，应用即可直接连接 MySQL；运行时不依赖 OrcaSQL Workbench、Node.js、WebView 或原生 MySQL 客户端。
 
-这份手册介绍 **MySQL 1.1.0 工程预览版**。第一次接入请从[下载与快速接入](Getting-Started.md)开始；已有应用需要安排线程和消息传递时，看 [Worker 集成](Worker-Integration.md)。
+当前文档适用于 `@arkdb/mysql` 1.1.0。第一次接入请从[下载与快速接入](Getting-Started.md)开始；需要在 Worker 中管理连接时，请阅读 [Worker 集成](Worker-Integration.md)。
 
 想先理解驱动如何工作，可以从[总览架构与源码导读](Architecture.md)查看模块边界、查询链路和独立取消会话。
 
@@ -12,10 +12,8 @@ ArkDB 是供 HarmonyOS 应用使用的原生 ArkTS 数据库驱动。把驱动 H
 | --- | --- |
 | 驱动 | `@arkdb/mysql`，一个包含共享核心代码的 HAR |
 | 目标平台 | HarmonyOS 6.1.1 / API 24，tablet 和 2in1 |
-| 下载 | [MySQL 1.1.0 Release](https://github.com/OrcaSQL-Workbench/ArkDB/releases/tag/mysql-v1.1.0) |
+| 下载 | [MySQL 1.1.0 发布页](https://github.com/OrcaSQL-Workbench/ArkDB/releases/tag/mysql-v1.1.0) |
 | MySQL | 文本与预处理查询、类型化参数、流式结果、只读游标、事务、截止时间、取消、元数据和服务器指标 |
-
-当前没有 PostgreSQL 驱动、连接池或自动管理的 Worker，也不会自动重连或重放 SQL。工程预览不代表已经通过目标设备与服务器的兼容性验收，详见[兼容性与升级](Compatibility-and-Upgrading.md)。
 
 ## 按任务阅读
 
@@ -36,7 +34,7 @@ ArkDB 是供 HarmonyOS 应用使用的原生 ArkTS 数据库驱动。把驱动 H
 
 ### 参考
 
-- [公共接口与错误处理](API-Reference.md)：查找工厂、连接、Provider 和可选能力接口。
+- [公共接口与错误处理](API-Reference.md)：查找工厂、连接、元数据、指标和可选能力接口。
 - [配置参考](Configuration-Reference.md)：连接、TLS 和查询选项的默认值及限制。
 - [数据类型与结果](Data-Types-and-Results.md)：值类型、列信息、结果集和会话状态。
 - [错误与日志](Errors-and-Logging.md)：错误分类、服务器错误码和日志设置。
@@ -46,20 +44,21 @@ ArkDB 是供 HarmonyOS 应用使用的原生 ArkTS 数据库驱动。把驱动 H
 
 [故障排查与问题反馈](Troubleshooting.md)按安装、Worker、连接、证书和查询现象列出检查方法。
 
-### 贡献与维护
+### 源码与构建
 
 - [总览架构与源码导读](Architecture.md)：理解共享核心、MySQL 实现、协议与传输分层，定位源码入口。
 - [构建、示例与发行](Building-and-Releasing.md)：自行编译驱动、运行源码示例或维护发行。普通应用接入不需要这些步骤。
 
 ## 接入前的边界
 
-- 应用负责 Worker、同一连接上的调用串行化、凭据保管和连接清理。驱动不会自动重连或重放 SQL。
+- 应用负责 Worker、连接池（如需要）、凭据保管和连接清理。驱动不会自动重连或重放 SQL。
+- 同一连接一次只能执行一个操作；请依次 `await` 查询、事务、元数据和指标调用。
 - 新接入请明确设置 TLS 策略。默认的 `PREFERRED` 允许回退到明文，不能当作服务器身份验证。
 - 不可信值使用类型化预处理、命名参数或受限 `insertRows`；标识符使用 `quoteMySqlIdentifier()`，不要拼接进文本查询。
 - 连接断开、等待超时或取消请求返回，都不能单独证明写入没有发生。
 
 ## 源码、示例与反馈
 
-[ArkDB 仓库](https://github.com/OrcaSQL-Workbench/ArkDB)维护驱动源码和发行包；[Worker 示例](https://github.com/OrcaSQL-Workbench/ArkDB/tree/126f786f93416f7d6894d842bf85aa26c7accbe4/examples/mysql-client)展示一个完整应用的接入方式。Workbench 本身的使用方法在[用户文档](https://orcasql-workbench.github.io/docs/)中。
+[ArkDB 仓库](https://github.com/OrcaSQL-Workbench/ArkDB)提供驱动源码和发布包；[1.1.0 Worker 示例](https://github.com/OrcaSQL-Workbench/ArkDB/tree/mysql-v1.1.0/examples/mysql-client)展示完整的应用接入方式。Workbench 本身的使用方法在[用户文档](https://orcasql-workbench.github.io/docs/)中。
 
 驱动问题请提交到 [ArkDB Issues](https://github.com/OrcaSQL-Workbench/ArkDB/issues)。需要准备哪些信息，见[问题反馈](Troubleshooting.md#提交问题时附上什么)。不要提交密码、私钥或客户数据。

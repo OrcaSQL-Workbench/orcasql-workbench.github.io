@@ -1,6 +1,6 @@
 # 事务、取消与超时
 
-事务和取消的完整用法已分开介绍。按需要阅读[事务](Transactions.md)或[取消与超时](Cancellation-and-Timeouts.md)；下面保留常用概念的入口。
+事务、查询取消和语句超时分别涉及不同的连接状态与错误处理。请按需要阅读[事务](Transactions.md)或[取消与超时](Cancellation-and-Timeouts.md)。
 
 ## 事务
 

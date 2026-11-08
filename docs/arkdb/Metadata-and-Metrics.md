@@ -1,6 +1,6 @@
 # 元数据与服务器指标
 
-MySQL 1.1.0 的 Provider 借用已经打开的连接，不负责创建、关闭或调度。它们的操作要与这条连接上的其他命令串行执行。
+元数据和指标接口借用已经打开的连接，不负责创建或关闭连接。调用时应与同一连接上的其他操作串行执行。
 
 ## 读取对象和指标
 
@@ -59,7 +59,7 @@ export async function inspectSampleTable(config: ConnectionConfig, password: str
 }
 ```
 
-Worker 调用时传入实际数据库名和表名，例如[事务教程准备的](Transactions.md#调用示例) `arkdb_sample_accounts`。返回行数和类型名取决于服务器及账号可见性，不提供虚构的固定输出。不要用查询页已关闭会话中的临时表作为本例输入。
+Worker 调用时传入实际数据库名和表名，例如[事务教程准备的](Transactions.md#调用示例) `arkdb_sample_accounts`。返回内容取决于服务器对象和账号权限。不要使用已经随连接关闭而删除的临时表。
 
 ## 读取指标并检查可用性
 
@@ -129,4 +129,4 @@ MySQL 指标模型还包括 `MetricGauge`、`MetricCounter`、`ServerProcessInfo
 
 `MAX_METRICS_PROCESS_ROWS`、`MAX_METRICS_REPLICATION_CHANNELS`、`MAX_METRICS_UNSIGNED_64`、`MAX_PROCESS_COMMAND_UTF8_BYTES`、`MAX_PROCESS_STATE_UTF8_BYTES` 和 `MAX_REPLICATION_CHANNEL_NAME_UTF8_BYTES` 定义模型上限，不代表服务器本身的容量。
 
-完整字段在同版 [MySQL 指标定义](https://github.com/OrcaSQL-Workbench/ArkDB/blob/126f786f93416f7d6894d842bf85aa26c7accbe4/mysql/src/main/ets/mysql/features/metrics/MySqlServerMetrics.ets)中。需要构造这些模型或做通用集成时，再查[公共接口](API-Reference.md)；普通展示优先使用 Provider 返回的数据和可用性状态。
+完整字段见 1.1.0 的 [MySQL 指标定义](https://github.com/OrcaSQL-Workbench/ArkDB/blob/mysql-v1.1.0/mysql/src/main/ets/mysql/features/metrics/MySqlServerMetrics.ets)。一般应用应直接使用接口返回的数据和可用性状态。

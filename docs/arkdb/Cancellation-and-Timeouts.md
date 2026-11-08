@@ -1,6 +1,6 @@
 # 取消与超时
 
-“不再等待”“已发送取消请求”和“服务器执行已经结束”是三件不同的事。MySQL 1.1.0 提供连接绑定取消和可选的语句截止时间执行器；两者都要等待原操作与控制清理收敛。
+“调用方不再等待”“已发送取消请求”和“服务器已经停止执行”是三种不同状态。取消查询后，仍应等待原查询和取消请求都结束，再决定是否复用连接。
 
 ## 取消当前查询
 
@@ -51,7 +51,7 @@ export async function demonstrateCancellation(queryConnection: DbConnection): Pr
 }
 ```
 
-查询先正常完成也是合法结果，不能要求每次取消都产生中断错误。控制账号需要具备取消目标查询的权限，控制命令与目标查询必须在同一服务器上。
+查询可能在取消生效前正常完成。用于控制连接的账号需要具备取消目标查询的权限，并连接到同一台服务器。
 
 ### 从 Worker 调用
 
@@ -92,16 +92,16 @@ Worker 将实际配置和本次密码传给 `runCancellationExample()`。可能�
 | --- | --- |
 | `ConnectionConfig.connectTimeoutMs` | 限制打开连接和根会话重置的总时间 |
 | `QueryOptions.statementTimeoutMs` | 校验数值，不会启动语句取消计时器 |
-| `mysqlFeatures.deadlines` + `MySqlDeadlineOptions` | 为缓冲文本查询或预处理执行启动计时器，并拥有取消、宽限和退役流程 |
+| `mysqlFeatures.deadlines` + `MySqlDeadlineOptions` | 为文本查询或预处理执行启动计时器，并处理取消、宽限等待和不可复用连接 |
 | `Promise.race` | 改变调用方等待时间，不停止服务器执行 |
 | 应用计时器配合取消接口 | 发起取消后，仍要等待原操作并处理清理 |
 | 关闭套接字或强制终止 Worker | 不能证明服务器已停止，也不能证明写入没有发生 |
 
-`MySqlDeadlineOptions.timeoutMs` 默认 `0`，表示关闭；`cancellationGraceMs` 默认 2000 毫秒，`queryOptions` 保留结果预算。截止时间到达后，执行器继续占有命令，等待原操作以及该 scope 上已经登记的全部取消尝试。宽限到期会先中止目标传输，再等待控制连接清理，并永久退役目标连接。
+`MySqlDeadlineOptions.timeoutMs` 默认 `0`，表示关闭；`cancellationGraceMs` 默认 2000 毫秒，`queryOptions` 用于设置结果预算。截止时间到达后，驱动会请求取消并等待原操作结束。若宽限时间内仍未结束，驱动会中止连接并将其标记为不可复用。
 
-未知的 KILL 结果或物理连接退役优先于原 SQL 的成功结果，最终执行结果保持 `Unknown`，不能自动重放。计时器和宽限值超过平台单次计时上限时会按同一个绝对到期时间分段安排。
+如果无法确认 `KILL QUERY` 的执行结果，最终执行结果为 `Unknown`，不能自动重试写入。
 
-低层 `statementTimeoutMs` 保持兼容字段，不会隐式改用 deadlines。应用自行使用计时器时，也不要让一个超时 Promise 对上层声称“取消成功”。
+`statementTimeoutMs` 仅保留为兼容字段，不会自动启用 `deadlines`。应用自行使用计时器时，也必须单独处理取消和连接清理。
 
 ## 兼容的句柄式接口
 

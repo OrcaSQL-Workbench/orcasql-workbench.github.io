@@ -33,7 +33,9 @@ ArkDB 手册使用同样的文件和导航规则，图片放在 `docs\arkdb\asse
 
 ArkDB 的接口与支持边界应对照上游公共 `mysql\Index.ets`、包指南和实际 Release 更新。下载示例可固定到真实发布的版本，但不要把工程预览写成生产认证，或把尚未实现的驱动、参数绑定、连接池和托管 Worker 写成可用功能。
 
-`docs\arkdb\Architecture.md` 与 `docs\arkdb\assets\arkdb-architecture.svg` 共同维护实现导读。图中的源码职责与调用关系要对照同一个 ArkDB 提交；更新时同步正文中的固定提交链接和 SVG 的来源元数据。自包含、无脚本的 SVG 仍同时复制到网站和 Wiki，供打印和无脚本阅读使用。
+ArkDB 开发者手册是面向应用开发者的公开文档。正文应优先回答如何安装、如何调用、返回什么以及失败后如何处理；不罗列与当前 MySQL 包无关的未支持数据库，不展示原始提交哈希、内部测试数量、发布证据、分支状态或旧页面迁移说明。源码链接使用对应的版本标签，例如 `mysql-v1.1.0`；提交级校验、发行门禁和历史兼容证据保留在维护者文档、测试 fixture 或上游发布说明中。
+
+`docs\arkdb\Architecture.md` 与 `docs\arkdb\assets\arkdb-architecture.svg` 共同维护实现导读。图中的源码职责与调用关系要对照同一个 ArkDB 版本；正文使用版本标签链接，SVG 和 Viewer 的内部来源元数据继续锁定该标签解析出的提交。自包含、无脚本的 SVG 仍同时复制到网站和 Wiki，供打印和无脚本阅读使用。
 
 静态图不保留 `tabindex`、按钮角色、交互状态 ARIA 或可点击的悬停提示，仍保留图和节点的描述。小字号标签与实际合成背景的对比度至少为 `4.5:1`，自动与显式浅深色都要满足；`test_arkdb_manual.py` 检查这些约束。
 
