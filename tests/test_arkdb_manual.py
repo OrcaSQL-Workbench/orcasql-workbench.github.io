@@ -144,6 +144,7 @@ class ArkDbManualTests(unittest.TestCase):
         self.assertIn("非空批处理要求会话事务状态已知", advanced)
         self.assertIn("不能在已有事务中执行", advanced)
         self.assertIn("普通结果集仍可能返回 `truncated = true`", advanced)
+        self.assertIn("无论参数是否位于注释内，这些可执行注释都会导致校验失败", advanced)
 
         connections = self.documentation.source.joinpath(
             "Connections.md").read_text(encoding="utf-8")
@@ -168,6 +169,11 @@ class ArkDbManualTests(unittest.TestCase):
         self.assertIn("`autocommit` 必须为 `true`", transactions)
         self.assertIn("只在事务回调执行期间有效", transactions)
         self.assertIn("在回调返回前 `await` 完成所有会话操作", transactions)
+
+        architecture = self.documentation.source.joinpath(
+            "Architecture.md").read_text(encoding="utf-8")
+        self.assertIn("如果回调结束时仍有操作正在进行", architecture)
+        self.assertIn("随后尝试回滚并让 `run()` 抛错", architecture)
 
     def test_old_page_routes_titles_and_heading_links_remain_available(self):
         legacy = json.loads((FIXTURES / "arkdb-legacy-routes.json").read_text(encoding="utf-8"))
