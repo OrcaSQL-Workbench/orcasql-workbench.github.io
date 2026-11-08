@@ -198,4 +198,4 @@ async function run(request: ConnectionRequest): Promise<void> {
 | `sample\Messages.ets` | 请求和响应 DTO |
 | `sample\SampleRunner.ets` | 校验、连接、读取、脱敏和清理 |
 
-在目标设备上运行前，请配置调试签名，并验证网络、证书和目标 MySQL 环境。建议项目见[兼容性与升级](Compatibility-and-Upgrading.md#使用前验证)。
+在目标设备上运行前，请配置调试签名，并验证网络、证书和目标 MySQL 环境。建议项目见[兼容性与升级](Compatibility-and-Upgrading.md#验证范围)。
