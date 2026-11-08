@@ -1,6 +1,6 @@
 # 错误与日志
 
-MySQL 1.1.0 使用 `ArkDbError` 表达驱动错误。在抛错的线程内捕获和分类，再把必要的脱敏信息传给 UI。版本来源见[兼容性与升级](Compatibility-and-Upgrading.md)。
+驱动使用 `ArkDbError` 表达错误。请在执行数据库操作的线程内捕获并分类，再把必要的脱敏信息传给 UI。
 
 本页内容：[错误字段](#错误字段)、[错误类别](#错误类别)、[展示错误](#展示错误)、[日志设置](#日志设置)。
 
@@ -36,7 +36,7 @@ MySQL 1.1.0 使用 `ArkDbError` 表达驱动错误。在抛错的线程内捕获
 
 一个普通 SQL 错误不一定关闭连接，但可能使会话状态未知。是否复用要结合状态判断；`Timeout` 本身也不能证明服务器停止执行。
 
-高级执行失败可能以 `MySqlOperationError` 提供 `outcome`、`cleanupErrors` 和可选 `originalCause`。`MySqlExecutionOutcome` 区分 `NotDispatched`、`Completed`、`ServerRejected` 和 `Unknown`；取消或中断仍通过错误类别与最终 outcome 共同表达。只有已证明的结果才能用于重试判断。`MySqlBatchError` 还保留已完成结果、失败索引和失败结果。
+高级执行失败可能返回 `MySqlOperationError`，其中 `outcome` 表示操作是否发送以及结果是否确定，`cleanupErrors` 保存清理阶段的错误。`MySqlExecutionOutcome` 包括 `NotDispatched`、`Completed`、`ServerRejected` 和 `Unknown`。`MySqlBatchError` 还会保留已完成结果、失败位置和失败结果。
 
 ## 展示错误
 
@@ -100,4 +100,4 @@ export function disableDriverLogs(): void {
 
 `LOG_DOMAIN` 和 `LogTag` 用于识别驱动日志，`ArkDB.*` 标签不承担应用 UI、存储或 RPC 的日志职责。内置标识符令牌只是假名化，不是匿名化。
 
-不要把密码、认证材料或敏感数据交给任何 sink。日志需要发给他人时，先按[问题反馈清单](Troubleshooting.md#提交问题时附上什么)脱敏。
+不要把密码、认证材料或敏感数据交给日志接收器。日志需要发给他人时，先按[问题反馈清单](Troubleshooting.md#提交问题时附上什么)脱敏。

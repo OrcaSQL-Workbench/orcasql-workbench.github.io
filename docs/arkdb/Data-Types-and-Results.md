@@ -1,6 +1,6 @@
 # 数据类型与结果
 
-这页说明 MySQL 1.1.0 的结果字段，以及同一个 HAR 中可移植契约的区别。普通读取示例见[查询指南](Queries.md)，版本来源见[兼容性与升级](Compatibility-and-Upgrading.md)。
+本页说明查询结果中的值类型、列信息和执行状态。普通读取示例见[查询指南](Queries.md)。
 
 本页内容：[SqlValue](#sqlvalue)、[列与服务器信息](#列与服务器信息)、[QueryResult](#queryresult)、[流式事件与汇总](#流式事件与汇总)、[MySQL 与 Core 类型](#mysql-类型与-core-类型)。
 
@@ -45,7 +45,7 @@ export async function readValueExamples(config: ConnectionConfig, password: stri
 }
 ```
 
-固定查询对应的预期文字如下，不是实机运行记录：
+运行后应得到：
 
 ```text
 sql_null | exact_bigint | exact_decimal | binary_value
@@ -58,9 +58,9 @@ NULL | 9007199254740993 | 12.34 | 0x4142
 
 `columns[i]` 对应行数组的第 i 项。`ColumnDef` 包含列名、来源、`nativeTypeId`、`nativeTypeName`、`valueKind` 和可空标记。`DbValueKind` 表达逻辑类型，不替代实际值的检查。
 
-MySQL 的 `ColumnDef` 是 `MySqlColumnDef` 的兼容名称，还保留 `table`、`type`、`charset`、`columnLength`、`flags`、`decimals` 等 MySQL 字段。不要把这些字段要求加到所有驱动的可移植列类型上。
+MySQL 的 `ColumnDef` 是 `MySqlColumnDef` 的兼容名称，还提供 `table`、`type`、`charset`、`columnLength`、`flags`、`decimals` 等 MySQL 专用字段。通用列类型不保证包含这些字段。
 
-`ServerInfo` 是 `MySqlServerInfo` 的兼容名称；连接上还可以读取版本、TLS 状态和不透明 `connectionHandle`。`ServerFamily.PostgreSQL` 是保留枚举值，不表示已实现 PostgreSQL 驱动。
+`ServerInfo` 是 `MySqlServerInfo` 的兼容名称；连接上还可以读取服务器版本、TLS 状态和不透明的 `connectionHandle`。
 
 ## QueryResult
 
@@ -94,9 +94,9 @@ MySQL 的 `ColumnDef` 是 `MySqlColumnDef` 的兼容名称，还保留 `table`�
 
 ## MySQL 类型与 Core 类型
 
-MySQL 保留原有公开类型和默认值，便于已有应用升级；可移植契约不凭空补出服务器未报告的值。
+MySQL 类型保留兼容字段和默认值；通用类型中，服务器未返回的字段可能为 `undefined`。
 
-| MySQL 名称 | 可移植名称 |
+| MySQL 名称 | 通用名称 |
 | --- | --- |
 | `SqlValue` | `CoreSqlValue`，还允许布尔值 |
 | `DatabaseSessionStatus` | `CoreDatabaseSessionStatus` |
@@ -104,12 +104,12 @@ MySQL 保留原有公开类型和默认值，便于已有应用升级；可移�
 | `QueryResultSummary`、`QueryExecutionSummary` | `CoreQueryResultSummary`、`CoreQueryExecutionSummary` |
 | `QueryResultSink` | `CoreQueryResultSink` |
 
-MySQL 的插入标识和警告数保留零默认值；可移植流式汇总可以不提供未报告的字段。例如 EOF 行终止符未报告插入标识时，不能根据 MySQL 兼容结果的零值推断服务器实际报告了零。
+MySQL 的插入标识和警告数保留零默认值；通用流式汇总可能省略服务器未报告的字段。例如 EOF 行终止符未报告插入标识时，不能根据 MySQL 兼容结果的零值推断服务器实际报告了零。
 
-`MySqlQueryResult` 与 `QueryResult` 是同一 MySQL 结果类的具体名称和兼容名称。可移植的连接、工厂、Provider 与取消接口在[公共接口参考](API-Reference.md#可选能力)中。
+`MySqlQueryResult` 与 `QueryResult` 指向同一个 MySQL 结果类。通用连接、工厂、元数据和取消接口见[公共接口参考](API-Reference.md#可选能力)。
 
 ## 估算辅助函数
 
 `estimateSqlValueBytes(value)`、`estimateSqlRowBytes(row)` 和 `estimateSqlRowsBytes(rows)` 返回预算用的字节估算。它们不测量运行时对象占用，也不是把结果序列化后的真实大小。
 
-完整字段可对照同版[结果契约](https://github.com/OrcaSQL-Workbench/ArkDB/blob/126f786f93416f7d6894d842bf85aa26c7accbe4/core/src/main/ets/model/QueryStream.ets)和 [MySQL 适配类型](https://github.com/OrcaSQL-Workbench/ArkDB/blob/126f786f93416f7d6894d842bf85aa26c7accbe4/mysql/src/main/ets/mysql/model/MySqlQueryStream.ets)。
+完整字段见 1.1.0 的[通用结果定义](https://github.com/OrcaSQL-Workbench/ArkDB/blob/mysql-v1.1.0/core/src/main/ets/model/QueryStream.ets)和 [MySQL 结果定义](https://github.com/OrcaSQL-Workbench/ArkDB/blob/mysql-v1.1.0/mysql/src/main/ets/mysql/model/MySqlQueryStream.ets)。

@@ -2423,7 +2423,7 @@ var Archify = {};
         repositoryLink.textContent = repository.label + ' @ ' + repository.shortRevision;
         if (repository.href) {
           repositoryLink.href = repository.href;
-          repositoryLink.setAttribute('aria-label', viewerText('viewer.passport.repository.open', { revision: repository.revision }));
+          repositoryLink.setAttribute('aria-label', viewerText('viewer.passport.repository.open', { revision: repository.shortRevision }));
         }
         evidence.title = viewerText('viewer.passport.verificationScope');
         sources.forEach(function (source) {

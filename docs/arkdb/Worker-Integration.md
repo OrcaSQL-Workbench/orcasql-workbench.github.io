@@ -2,7 +2,7 @@
 
 数据库连接由应用自己的 Worker 管理。页面负责输入和展示，Worker 负责连接、执行和关闭。驱动不会创建 Worker，也不会替应用排队并发请求。
 
-这页适用于 MySQL 1.1.0。可以对照[完整 Stage 示例](https://github.com/OrcaSQL-Workbench/ArkDB/tree/126f786f93416f7d6894d842bf85aa26c7accbe4/examples/mysql-client)接入，不必自行设计一套托管客户端接口。
+可参考 [1.1.0 Stage 示例](https://github.com/OrcaSQL-Workbench/ArkDB/tree/mysql-v1.1.0/examples/mysql-client)接入。
 
 ## 注册入口
 
@@ -167,9 +167,9 @@ async function run(request: ConnectionRequest): Promise<void> {
 }
 ```
 
-成功响应中的 `ok` 为 `true`；连接或关闭失败时保持 `false`，展示脱敏后的错误。设置空密码引用只减少保留，不代表安全擦除。消息在发送后不要由宿主立即修改，以免影响 Worker 使用共享请求。
+成功响应中的 `ok` 为 `true`；连接或关闭失败时保持 `false`，展示脱敏后的错误。将密码字段设为空字符串只能减少引用保留，不能保证从内存中安全擦除。消息发送后不要立即修改请求对象，以免影响 Worker 读取。
 
-此入口只检查连接。需要运行[查询页的 CRUD](Queries.md#串行调用与结果)时，在 Worker 导入 `runCrudExample()`，用它替换 `checkConnection()` 的调用，并将返回的字符串行放入响应文字；不要同时启动两个操作。现成上游应用仍是只读示例，不因本页新增代码就具备 CRUD 界面。
+此入口只检查连接。需要运行[查询页的 CRUD](Queries.md#串行调用与结果)时，在 Worker 导入 `runCrudExample()`，用它替换 `checkConnection()` 的调用，并将返回的字符串行放入响应文字；不要同时启动两个操作。官方示例界面仍只演示只读查询。
 
 ## 安排连接的生命周期
 
@@ -177,13 +177,13 @@ async function run(request: ConnectionRequest): Promise<void> {
 
 页面退出时先请求 Worker 停止接收新操作并清理连接。必要时可用有界的强制终止兜底，但终止 Worker 不能证明服务器端查询已取消，特别是已经发出的写操作。
 
-上面的一次性连接检查入口不实现 `stop` 消息，不要直接向它发送上游完整示例的 `stop` 请求。需要可协作停止、页面退出计时和强制终止兜底时，使用下方完整示例的 `SampleRunner.stop()` 与页面生命周期实现；强制终止也不能证明数据库清理已经完成。
+上面的一次性连接检查入口不实现 `stop` 消息。需要协作停止、页面退出计时和强制终止兜底时，请参考完整示例中的 `SampleRunner.stop()` 和页面生命周期实现。
 
 取消查询时还要等待原查询结束，详见[取消与超时](Cancellation-and-Timeouts.md)。
 
 ## 运行完整示例
 
-从与 Release 对应的 [ArkDB 源码](https://github.com/OrcaSQL-Workbench/ArkDB/tree/126f786f93416f7d6894d842bf85aa26c7accbe4)准备示例。构建步骤在[示例 README](https://github.com/OrcaSQL-Workbench/ArkDB/blob/126f786f93416f7d6894d842bf85aa26c7accbe4/examples/mysql-client/README.md)中，包括 HAR 准备和未签名 HAP 构建。
+从 [ArkDB 1.1.0 源码](https://github.com/OrcaSQL-Workbench/ArkDB/tree/mysql-v1.1.0)准备示例。构建步骤见[示例说明](https://github.com/OrcaSQL-Workbench/ArkDB/blob/mysql-v1.1.0/examples/mysql-client/README.md)。
 
 用 DevEco Studio 打开 `examples\mysql-client`，配置自己的本地调试签名，选择兼容的 API-24 tablet/2in1 目标。示例不附带签名身份。
 
@@ -198,4 +198,4 @@ async function run(request: ConnectionRequest): Promise<void> {
 | `sample\Messages.ets` | 请求和响应 DTO |
 | `sample\SampleRunner.ets` | 校验、连接、读取、脱敏和清理 |
 
-本地编译与离线测试不等于实机网络、证书和取消测试。需要验收的范围见[兼容性说明](Compatibility-and-Upgrading.md#验证范围)。
+在目标设备上运行前，请配置调试签名，并验证网络、证书和目标 MySQL 环境。建议项目见[兼容性与升级](Compatibility-and-Upgrading.md#使用前验证)。

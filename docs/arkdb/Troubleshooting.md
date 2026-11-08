@@ -1,12 +1,12 @@
 # 故障排查与问题反馈
 
-先记下实际使用的 HAR 版本、设备/API 和服务器类型，再对照下面的现象检查。这里的用法以 MySQL 1.1.0 为准。
+排查前请记录 HAR 版本、HarmonyOS API、设备类型和 MySQL 版本，再按现象检查。
 
 ## 安装后找不到 @arkdb/mysql
 
 确认 HAR 已加入真正使用驱动的模块，而不是只放在工程目录。文件依赖路径相对于模块的 `oh-package.json5`，修改后要恢复依赖并重新构建。
 
-只从 `@arkdb/mysql` 导入。不要注册 ArkDB 源码模块、导入包内路径或补一个 core override。还要核对当前 API-24 字节码包是否适合消费项目的工具链。步骤见[加入应用模块](Getting-Started.md#加入应用模块)。
+只从 `@arkdb/mysql` 导入，不要使用包内路径。无需另外安装 `@arkdb/core`。还要确认应用使用 API 24 兼容工具链。步骤见[加入应用模块](Getting-Started.md#加入应用模块)。
 
 ## Worker 无法启动或消息不对
 
@@ -34,19 +34,19 @@ BIGINT 是 `bigint`，DECIMAL 是字符串，SQL NULL 是 `null`。不要把精�
 
 ## 流式读取时连接关闭
 
-检查 sink 是否长期不返回，以及是否一直累积行块。等待 sink 不会暂停套接字收包；接收队列和截断后的同步排空都有上限。
+检查结果接收器是否长期不返回，以及是否一直累积行块。等待回调不会暂停网络接收；接收队列和截断后的同步排空都有上限。
 
 记录脱敏后的错误类别与所用预算，先缩小结果或处理每块所需的工作量，不要盲目扩大所有上限。排空失败后不能把连接当作已经恢复同步。见[处理截断](Streaming.md#处理截断)。
 
 ## 设置 statementTimeoutMs 后查询还在执行
 
-这个字段只校验数值，不启动语句取消计时器。需要驱动拥有计时、取消宽限和连接退役时，使用 `mysqlFeatures.deadlines` 与 `MySqlDeadlineOptions`。`Promise.race` 仍只改变等待行为。见[取消与超时](Cancellation-and-Timeouts.md)。
+这个字段只校验数值，不启动语句取消计时器。需要由驱动处理计时、取消宽限和不可复用连接时，使用 `mysqlFeatures.deadlines` 与 `MySqlDeadlineOptions`。`Promise.race` 仍只改变等待行为。见[取消与超时](Cancellation-and-Timeouts.md)。
 
 ## 预处理、游标或批处理返回 Unsupported
 
-先通过 `requireMySqlFeatures(connection)` 取得容器，再检查对应成员是否存在；不要只根据 capability hint 推断所有高级能力可用。连接必须已经 Ready 且没有其他命令占用。
+先通过 `requireMySqlFeatures(connection)` 获取 MySQL 专用功能，再检查对应成员是否存在。连接必须已经处于 `Ready`，并且没有其他操作正在进行。
 
-游标会在两次 `fetch()` 之间继续占用连接；显式 statement 绑定创建它的物理会话；会话重置会使旧句柄失效。服务器未建立只读游标、预处理参数不匹配或存储过程 OUT 形状不合法都会显式失败，不会静默退回文本拼接。见[预处理与高级执行](Advanced-Execution.md)。
+游标会在两次 `fetch()` 之间继续占用连接；显式预处理语句绑定创建它的连接；会话重置会使旧句柄失效。服务器未建立只读游标、预处理参数不匹配或存储过程 OUT 结果不符合声明时都会报错。见[预处理与高级执行](Advanced-Execution.md)。
 
 ## 取消返回后能否立即复用连接
 
@@ -58,7 +58,7 @@ MySQL 已发出的控制命令如果超时或结果丢失，目标连接会永�
 
 检查 `availability` 和错误类别，不把 `data: null` 当成零。核对账号权限、服务器产品和所需的 Performance Schema 数据源。
 
-Provider 使用的连接仍要与其他操作串行。见[元数据与服务器指标](Metadata-and-Metrics.md)。
+读取指标时仍要与同一连接上的其他操作串行执行。见[元数据与服务器指标](Metadata-and-Metrics.md)。
 
 ## 断线或超时后能否重试写入
 
@@ -70,7 +70,7 @@ Provider 使用的连接仍要与其他操作串行。见[元数据与服务器�
 
 驱动问题请提交到 [ArkDB Issues](https://github.com/OrcaSQL-Workbench/ArkDB/issues)，附上：
 
-- HAR 版本、下载的 Release，以及是否改过源码。
+- HAR 版本、下载来源，以及是否改过源码。
 - DevEco/HarmonyOS API、设备类型，是否在真机上复现。
 - 服务器产品和版本，以及连接使用的 TLS 模式。
 - 能复现问题的最小步骤、预期与实际结果；SQL 和数据先脱敏。

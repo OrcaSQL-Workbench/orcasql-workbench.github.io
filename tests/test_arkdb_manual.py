@@ -70,6 +70,35 @@ class ArkDbManualTests(unittest.TestCase):
         self.assertEqual(found, set(examples), "A released usage example is missing from the manual")
         self.assertEqual(set(authored), set(AUTHORED_EXAMPLES), "A topic-specific example is missing")
 
+    def test_public_manual_avoids_maintainer_only_release_language(self):
+        forbidden_phrases = (
+            "工程预览",
+            "当前没有 PostgreSQL",
+            "旧版 tag",
+            "不把开发分支中的版本号当作已经发布",
+            "旧书签",
+            "源码提交",
+            "密封发行记录",
+            "发布证据",
+        )
+        raw_revision = re.compile(r"(?<![0-9a-f])(?:[0-9a-f]{40}|[0-9a-f]{64})(?![0-9a-f])")
+        project = self.documentation.source.parent.parent
+        public_surfaces = [
+            *sorted(self.documentation.source.glob("*.md")),
+            project / "README.md",
+            project / "site" / "index.html",
+        ]
+        for path in public_surfaces:
+            content = path.read_text(encoding="utf-8")
+            with self.subTest(page=path.name):
+                for phrase in forbidden_phrases:
+                    self.assertNotIn(phrase, content)
+                self.assertNotIn("PostgreSQL", content)
+                self.assertIsNone(
+                    raw_revision.search(content),
+                    f"{path.name}: public documentation must link by release version, not raw revisions",
+                )
+
     def test_example_markers_are_hidden_in_site_and_wiki(self):
         for page in self.documentation.pages:
             html = self.documentation.html(page)
@@ -104,7 +133,7 @@ class ArkDbManualTests(unittest.TestCase):
         self.assertIn("CREATE TEMPORARY TABLES", queries)
         self.assertIn("result.truncated", queries)
         self.assertIn("1 | banana | 200", queries)
-        self.assertIn("不是实机运行记录", queries)
+        self.assertIn("按上述顺序执行后，应得到", queries)
 
     def test_release_lifecycle_boundaries_are_explicit(self):
         advanced = self.documentation.source.joinpath(
@@ -112,15 +141,15 @@ class ArkDbManualTests(unittest.TestCase):
         self.assertIn("`done` 只表示游标已经结束并释放连接所有权", advanced)
         self.assertIn("不证明服务器结果已经完整读完", advanced)
         self.assertIn("累计 `maxRows` 或 `maxResultBytes` 恰好用尽", advanced)
-        self.assertIn("非空 batch 要求会话事务状态已知", advanced)
-        self.assertIn("在 PREPARE 前拒绝已经开启的事务", advanced)
-        self.assertIn("普通结果集仍可能以 `truncated = true` 成功返回", advanced)
+        self.assertIn("非空批处理要求会话事务状态已知", advanced)
+        self.assertIn("不能在已有事务中执行", advanced)
+        self.assertIn("普通结果集仍可能返回 `truncated = true`", advanced)
 
         connections = self.documentation.source.joinpath(
             "Connections.md").read_text(encoding="utf-8")
-        self.assertIn("明确拒绝命令（包括 `Unsupported`）", connections)
-        self.assertIn("连接保持原 generation 和未重置的会话状态", connections)
-        self.assertIn("需要重置保证的调用方", connections)
+        self.assertIn("明确拒绝重置（包括返回 `Unsupported`）", connections)
+        self.assertIn("连接仍保持重置前的会话状态", connections)
+        self.assertIn("应关闭这条连接，不要将其重新放回池中", connections)
 
         getting_started = self.documentation.source.joinpath(
             "Getting-Started.md").read_text(encoding="utf-8")
@@ -132,12 +161,12 @@ class ArkDbManualTests(unittest.TestCase):
         configuration = self.documentation.source.joinpath(
             "Configuration-Reference.md").read_text(encoding="utf-8")
         self.assertIn("`MySqlCursorOptions` 直接继承 `QueryOptions`", configuration)
-        self.assertIn("`MySqlTransactionOptions` 没有 `queryOptions`", configuration)
+        self.assertIn("`MySqlTransactionOptions` 只包含事务属性，没有 `queryOptions`", configuration)
 
         transactions = self.documentation.source.joinpath(
             "Transactions.md").read_text(encoding="utf-8")
-        self.assertIn("并且 `autocommit = true`", transactions)
-        self.assertIn("只在事务回调函数尚未 resolve/reject 时有效", transactions)
+        self.assertIn("`autocommit` 必须为 `true`", transactions)
+        self.assertIn("只在事务回调执行期间有效", transactions)
         self.assertIn("在回调返回前 `await` 完成所有会话操作", transactions)
 
     def test_old_page_routes_titles_and_heading_links_remain_available(self):
@@ -256,8 +285,8 @@ class ArkDbManualTests(unittest.TestCase):
         self.assertTrue(source_links, "Architecture guide must link to source evidence")
         for link in source_links:
             self.assertTrue(link.startswith(
-                provenance["repository"] + "/blob/" + provenance["revision"] + "/"),
-                f"Source link differs from the diagram revision: {link}")
+                provenance["repository"] + "/blob/mysql-v1.1.0/"),
+                f"Source link must use the documented release tag: {link}")
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

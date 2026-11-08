@@ -120,6 +120,24 @@ class ArchitectureViewerTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "different source provenance or nodes"):
                     Documentation(self.source, self.manual).viewer_files()
 
+    def test_viewer_shows_release_tags_instead_of_commit_hashes(self):
+        template = (self.source / "viewer" / "index.html").read_text(encoding="utf-8")
+        payload = json.loads(re.search(
+            r'<script id="archify-source-evidence-data" type="application/json">(.*?)</script>',
+            template, re.DOTALL,
+        )[1])
+        repository = payload["repository"]
+        self.assertRegex(repository["revision"], r"^[a-f0-9]{40}$")
+        self.assertEqual(repository["shortRevision"], "mysql-v1.1.0")
+        self.assertTrue(repository["href"].endswith("/tree/mysql-v1.1.0"))
+        for sources in payload["nodes"].values():
+            for source in sources:
+                self.assertIn("/blob/mysql-v1.1.0/", source["href"])
+                self.assertNotIn(repository["revision"], source["href"])
+        self.assertIn('aria-label="相关源码"', template)
+        self.assertIn("以下链接对应本手册版本的源码位置。", template)
+        self.assertNotIn("已验证的源代码证据", template)
+
     def test_workbench_does_not_receive_the_interactive_exception(self):
         destination = self.root / "site"
         build_site(self.source, destination, manual=MANUALS["workbench"])
